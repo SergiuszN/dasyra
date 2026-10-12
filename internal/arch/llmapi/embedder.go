@@ -25,7 +25,7 @@ func (c *Client) embed(ctx context.Context, model string, texts []string) ([][]f
 		} `json:"data"`
 		Usage *usage `json:"usage"`
 	}
-	if err := c.post(ctx, "/embeddings", "application/json", bytes.NewReader(body), &resp); err != nil {
+	if err := c.post(ctx, c.url("/embeddings"), "application/json", bytes.NewReader(body), &resp); err != nil {
 		return nil, err
 	}
 	if resp.Usage != nil {

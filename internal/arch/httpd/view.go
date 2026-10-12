@@ -88,6 +88,7 @@ func breakdownOf(heading string, groups []sqlite.Group, label func(string) strin
 var purposes = map[string]string{
 	"chat":          "Chat replies",
 	"check_in":      "Check-ins",
+	"check_in_gate": "Check-in gate",
 	"reminder":      "Reminders and digests",
 	"reflection":    "Nightly reflection",
 	"web_search":    "Web search: answer synthesis",

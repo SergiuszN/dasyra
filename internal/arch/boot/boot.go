@@ -84,7 +84,7 @@ func Build(work context.Context, cfg Config, db *sqlite.DB, log *slog.Logger) *A
 	return &App{
 		Config: cfg, DB: db, Meaning: meaning, Users: users, Invites: sqlite.Invites{DB: db}, Telegram: chat, Dasyra: dasyra, Work: bg, AI: ai, Log: log,
 		Reflection: &app.Reflection{Users: users, Messages: messages, Memories: memories, Tools: reflectionTools, AI: ai, Log: log},
-		CheckIns:   &app.CheckIns{Users: users, Messages: messages, Dasyra: dasyra, Log: log},
+		CheckIns:   &app.CheckIns{Users: users, Messages: messages, Plans: sqlite.Settings{DB: db}, Dasyra: dasyra, Gate: ai, Zone: cfg.ServerZone, Log: log},
 		Reminders:  &app.Reminders{Users: users, Messages: messages, Events: events, Dasyra: dasyra, Log: log},
 		Inbox: &app.Inbox{Users: users, Invites: sqlite.Invites{DB: db}, Messages: messages, Dasyra: dasyra, Chat: chat,
 			Voice: ai, IDs: ids, Log: log, Debounce: 2 * time.Second, Work: bg, Timezone: cfg.ServerZone.String()},
@@ -128,7 +128,8 @@ func (a *App) ReflectAll(ctx context.Context) error {
 // Scheduler holds the periodic jobs, at server-time hours.
 func (a *App) Scheduler() *schedule.Scheduler {
 	return &schedule.Scheduler{Location: a.Config.ServerZone, Log: a.Log, Jobs: []*schedule.Job{
-		{Name: "proactive", When: schedule.AtHours(9, 12, 15, 18, 21), Run: a.CheckIns.Run},
+		// Every hour: the check-in hours are set in the admin panel
+		{Name: "proactive", When: schedule.EveryMinutes(60), Run: a.CheckIns.Scheduled},
 		{Name: "reminders", When: schedule.EveryMinutes(5), Run: a.Reminders.Run},
 		{Name: "reflect", When: schedule.AtHours(3), Run: a.ReflectAll},
 	}}
@@ -138,7 +139,7 @@ func (a *App) Scheduler() *schedule.Scheduler {
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("POST /telegram/webhook", &telegram.Webhook{Secret: a.Config.WebhookSecret, Inbox: a.Inbox, Log: a.Log})
-	admin := &httpd.Admin{Report: sqlite.Report{DB: a.DB}, Users: a.Users, AI: sqlite.AISettings{DB: a.DB}, CheckAI: a.AI.Check, SuggestPrices: a.AI.SuggestPrices,
+	admin := &httpd.Admin{Report: sqlite.Report{DB: a.DB}, Users: a.Users, AI: sqlite.AISettings{DB: a.DB}, Plans: sqlite.Settings{DB: a.DB}, CheckAI: a.AI.Check, SuggestPrices: a.AI.SuggestPrices,
 		Login: a.Config.AdminLogin, Password: a.Config.AdminPassword, Log: a.Log}
 	admin.Register(mux)
 	return mux

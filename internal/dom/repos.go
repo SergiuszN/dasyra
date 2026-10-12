@@ -34,6 +34,8 @@ type Messages interface {
 	Some(ctx context.Context, userID int64, ids []int64) ([]Message, error)
 	HasUserMessageAfter(ctx context.Context, userID, messageID int64) (bool, error)
 	CheckInsSinceUserMessage(ctx context.Context, userID int64) (int, error)
+	// LastUserMessageAt is when the user last wrote, zero when never
+	LastUserMessageAt(ctx context.Context, userID int64) (time.Time, error)
 	DocumentFileID(ctx context.Context, userID, telegramID int64) (string, error)
 	// Seen guards against Telegram redelivering a webhook, which happens within a day
 	Seen(ctx context.Context, userID, telegramID int64, since time.Time) (bool, error)
@@ -157,6 +159,12 @@ type AISettings interface {
 	Price(ctx context.Context, providerID int64, model string) (*AIPrice, error) // nil when not set
 	SavePrice(ctx context.Context, p AIPrice) error
 	DeletePrice(ctx context.Context, providerID int64, model string) error
+}
+
+// CheckInPlans holds the check-in plan of the admin panel, global like AISettings.
+type CheckInPlans interface {
+	CheckInPlan(ctx context.Context) (CheckInPlan, error) // DefaultCheckInPlan when none is saved
+	SaveCheckInPlan(ctx context.Context, p CheckInPlan) error
 }
 
 type UsageLog interface {

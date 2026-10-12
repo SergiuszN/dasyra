@@ -32,6 +32,7 @@ type Admin struct {
 	Report  UsageReport
 	Users   dom.Users
 	AI      dom.AISettings
+	Plans   dom.CheckInPlans
 	CheckAI func(ctx context.Context, p dom.AIProvider) error // whether the provider answers with its key
 	// SuggestPrices finds models in OpenRouter's catalog, a hint for the prices form
 	SuggestPrices   func(ctx context.Context, models []string) (map[string]dom.AIPrice, error)
@@ -71,6 +72,8 @@ func (a *Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /panel/ai/roles", a.guard(a.saveRoles))
 	mux.HandleFunc("POST /panel/ai/prices", a.guard(a.savePrices))
 	mux.HandleFunc("POST /panel/ai/prices/suggest", a.guard(a.suggestPrices))
+	mux.HandleFunc("GET /panel/check-ins", a.guard(a.checkInsPage))
+	mux.HandleFunc("POST /panel/check-ins", a.guard(a.saveCheckIns))
 }
 
 func (a *Admin) configured() bool { return a.Login != "" && a.Password != "" }

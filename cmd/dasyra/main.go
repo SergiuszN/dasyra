@@ -30,7 +30,7 @@ const usage = `usage: dasyra <command>
   backup <file>
              consistent copy of the database, also while the bot runs
   invite     create an invite link
-  proactive  run check-ins once
+  proactive  run check-ins once, whatever the hour
   reminders  run due reminders once
   reflect    run the nightly reflection once
   index      embed every new or changed memory, message and note now (the nightly run does it before reflection)

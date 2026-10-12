@@ -49,3 +49,8 @@ type Client interface {
 	// Chat returns the assistant message, an error when there is none
 	Chat(ctx context.Context, r Request) (Message, error)
 }
+
+// Decider answers a yes/no question about some content with the probability of yes: a decision model writes no text.
+type Decider interface {
+	Probability(ctx context.Context, m Model, state []string, question string) (float64, error)
+}

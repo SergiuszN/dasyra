@@ -97,6 +97,15 @@ func (r Messages) CheckInsSinceUserMessage(ctx context.Context, userID int64) (i
 	return n, err
 }
 
+func (r Messages) LastUserMessageAt(ctx context.Context, userID int64) (time.Time, error) {
+	var last wall
+	err := r.DB.QueryRowContext(ctx, "SELECT MAX(created_at) FROM conversations WHERE user_id = ? AND role = 'user'", userID).Scan(&last)
+	if err != nil || !last.valid {
+		return time.Time{}, err
+	}
+	return last.in(r.DB.Server), nil
+}
+
 func (r Messages) DocumentFileID(ctx context.Context, userID, telegramID int64) (string, error) {
 	var id string
 	err := r.DB.QueryRowContext(ctx, `SELECT document_file_id FROM conversations

@@ -16,6 +16,7 @@ const (
 	RoleTextReader    = "text_reader"
 	RoleTranscription = "transcription"
 	RoleEmbedding     = "embedding"
+	RoleCheckInGate   = "check_in_gate"
 )
 
 // Model is a model with the reasoning effort a role runs it at.
@@ -40,7 +41,10 @@ var (
 	// Embedding turns memories and messages into vectors, so a memory is found by meaning and in any language:
 	// about $0.02 per million tokens
 	Embedding = Model{Role: RoleEmbedding, ID: "openai/text-embedding-3-small"}
+	// CheckInGate asks before a check-in whether there is anything to say: a decision model answers with a probability,
+	// no text, $0.02 per million input tokens. Off until turned on in the panel; only OpenRouter serves decision models
+	CheckInGate = Model{Role: RoleCheckInGate, ID: "perplexity/pplx-decider-v1.1-27b"}
 )
 
 // Models are all the roles with their defaults, in the order the admin panel shows them.
-var Models = []Model{Dasyra, Reflection, WebSearch, TextReader, Transcription, Embedding}
+var Models = []Model{Dasyra, Reflection, WebSearch, TextReader, Transcription, Embedding, CheckInGate}

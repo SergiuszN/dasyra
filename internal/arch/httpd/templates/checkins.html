@@ -1,0 +1,69 @@
+{{define "checkins"}}{{template "head" .Title}}
+<header class="top">
+    <div>
+        <div class="crumbs"><a href="/panel">← Spend</a></div>
+        <h1>{{.Title}}</h1>
+    </div>
+    <form method="post" action="/logout">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <button class="link" type="submit">Log out</button>
+    </form>
+</header>
+
+{{with .Notice}}<div class="flash">{{.}}</div>{{end}}
+{{with .Error}}<div class="flash error">{{.}}</div>{{end}}
+
+<form method="post" action="/panel/check-ins">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <section class="card">
+        <h2>Hours</h2>
+        <div class="hours">
+            {{range .Hours}}
+                <label class="hour"><input type="checkbox" name="hour" value="{{.Hour}}"{{if .On}} checked{{end}}> {{printf "%02d" .Hour}}:00</label>
+            {{end}}
+        </div>
+        <p class="note">
+            Server time. At each hour Dasyra looks at every user and writes only when she has something to say. Users who talked in the
+            last 3 hours, or left two check-ins unanswered, are skipped. No hours turn check-ins off; reminders and digests still go out.
+        </p>
+    </section>
+
+    <section class="card">
+        <h2>Silent users</h2>
+        <div class="fields">
+            <label class="field">One check-in a day after, days
+                <input name="quiet_days" value="{{.Plan.QuietDays}}" inputmode="numeric">
+            </label>
+            <label class="field">No check-ins after, days
+                <input name="stop_days" value="{{.Plan.StopDays}}" inputmode="numeric">
+            </label>
+        </div>
+        <p class="note">
+            Counted from the user's last message. The one check-in of a quiet user is the middle hour of the day{{if ge .QuietHour 0}}, now {{printf "%02d" .QuietHour}}:00{{end}}.
+            After the second limit she waits until the user writes again. 0 turns a rule off.
+        </p>
+    </section>
+
+    <section class="card">
+        <h2>Gate</h2>
+        <div class="fields">
+            <label class="field">&nbsp;
+                <span><input type="checkbox" name="gate"{{if .Plan.Gate}} checked{{end}} style="width:auto"> Ask the decision model first</span>
+            </label>
+            <label class="field">Threshold, probability of "worth writing"
+                <input name="threshold" value="{{.Plan.Threshold}}" inputmode="decimal">
+            </label>
+        </div>
+        <p class="note">
+            Before a check-in, {{.GateModel}} reads what Dasyra would see and answers how likely it is that she has something new to say.
+            Below the threshold the check-in is skipped without running Dasyra: most check-ins end with nothing to send. A failed gate lets
+            the check-in run. Its answers are in the logs ("Check-in gate"), its cost under "Check-in gate". The model is set on the
+            <a href="/panel/ai">models page</a>; only OpenRouter serves decision models.
+        </p>
+    </section>
+
+    <div class="actions">
+        <button class="btn primary" type="submit">Save check-ins</button>
+    </div>
+</form>
+{{template "foot"}}{{end}}

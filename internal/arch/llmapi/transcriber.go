@@ -40,7 +40,7 @@ func (c *Client) transcribe(ctx context.Context, model string, audio []byte, fil
 		Text  *string `json:"text"`
 		Usage *usage  `json:"usage"`
 	}
-	if err := c.post(ctx, "/audio/transcriptions", form.FormDataContentType(), &body, &resp); err != nil {
+	if err := c.post(ctx, c.url("/audio/transcriptions"), form.FormDataContentType(), &body, &resp); err != nil {
 		return "", err
 	}
 	if resp.Usage != nil {

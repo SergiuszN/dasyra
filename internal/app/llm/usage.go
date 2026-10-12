@@ -6,6 +6,7 @@ import "context"
 const (
 	PurposeChat          = "chat"
 	PurposeCheckIn       = "check_in"
+	PurposeCheckInGate   = "check_in_gate"
 	PurposeReminder      = "reminder"
 	PurposeReflection    = "reflection"
 	PurposeWebSearch     = "web_search"

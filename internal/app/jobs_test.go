@@ -2,18 +2,105 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	"dasyra/internal/app/llm"
 	"dasyra/internal/app/tool"
 	"dasyra/internal/arch/sqlite"
 	"dasyra/internal/dom"
 )
 
 func (w *world) checkIns() *CheckIns {
-	return &CheckIns{Users: sqlite.Users{DB: w.db}, Messages: w.messages, Dasyra: w.dasyra, Log: discard}
+	zone, _ := time.LoadLocation("Europe/Warsaw")
+	return &CheckIns{Users: sqlite.Users{DB: w.db}, Messages: w.messages, Plans: sqlite.Settings{DB: w.db}, Dasyra: w.dasyra, Zone: zone, Log: discard}
+}
+
+func TestCheckInsThinOutForSilentUsers(t *testing.T) {
+	w := newWorld(t, answers("Как дела с бизнес-планом?"))
+	zone, _ := time.LoadLocation("Europe/Warsaw")
+	day := func(d, hour int) time.Time { return time.Date(2026, 3, d, hour, 0, 0, 0, zone) }
+	w.say(t, dom.RoleUser, "сегодня сажусь за бизнес-план", day(1, 20))
+	c := w.checkIns()
+
+	at(t, day(4, 9)) // three days quiet: only the middle hour, 15
+	must(t, c.Scheduled(ctx))
+	at(t, day(4, 10)) // not an hour of the plan
+	must(t, c.Scheduled(ctx))
+	if len(w.ai.requests) != 0 {
+		t.Fatal("quiet user before the middle hour")
+	}
+	at(t, day(4, 15))
+	must(t, c.Scheduled(ctx))
+	if len(w.chat.sent) != 1 {
+		t.Fatalf("sent %q", w.chat.sent)
+	}
+
+	w.say(t, dom.RoleUser, "ок", day(4, 16))
+	at(t, day(10, 15)) // five days quiet: none at all
+	must(t, c.Scheduled(ctx))
+	if len(w.chat.sent) != 1 {
+		t.Fatal("silent for five days")
+	}
+
+	// The plan comes from the panel
+	must(t, sqlite.Settings{DB: w.db}.SaveCheckInPlan(ctx, dom.CheckInPlan{Hours: []int{10}}))
+	must(t, c.Scheduled(ctx))
+	at(t, day(11, 10))
+	must(t, c.Scheduled(ctx))
+	if len(w.chat.sent) != 2 {
+		t.Fatalf("own hours, rules off: sent %q", w.chat.sent)
+	}
+}
+
+// decider answers every question with p, or fails
+type decider struct {
+	p      float64
+	err    error
+	states [][]string
+}
+
+func (d *decider) Probability(_ context.Context, _ llm.Model, state []string, _ string) (float64, error) {
+	d.states = append(d.states, state)
+	return d.p, d.err
+}
+
+func TestCheckInGateSkipsEmptyRunsAndFailsOpen(t *testing.T) {
+	w := newWorld(t, answers("Как прошёл созвон?"))
+	at(t, time.Now())
+	w.say(t, dom.RoleUser, "иду на созвон с инвестором", now().Add(-4*time.Hour))
+	gate := &decider{p: 0.1}
+	c := w.checkIns()
+	c.Gate = gate
+
+	must(t, c.Run(ctx))
+	if len(gate.states) != 0 || len(w.chat.sent) != 1 {
+		t.Fatal("the gate is off by default")
+	}
+
+	plan := dom.DefaultCheckInPlan()
+	plan.Gate = true
+	must(t, sqlite.Settings{DB: w.db}.SaveCheckInPlan(ctx, plan))
+	at(t, now().Add(5*time.Hour))
+	w.say(t, dom.RoleUser, "созвон прошёл", now().Add(-4*time.Hour))
+	must(t, c.Run(ctx))
+	state := strings.Join(gate.states[0], "\n")
+	if len(w.chat.sent) != 1 || !strings.Contains(state, "North stars") || !strings.Contains(state, "созвон с инвестором") || strings.Contains(state, "PROACTIVE MODE") {
+		t.Fatalf("below the threshold: sent %q, state %q", w.chat.sent, state)
+	}
+
+	gate.p = 0.6
+	must(t, c.Run(ctx))
+	gate.err = errors.New("HTTP 503")
+	at(t, now().Add(5*time.Hour))
+	w.say(t, dom.RoleUser, "ещё одно", now().Add(-4*time.Hour))
+	must(t, c.Run(ctx))
+	if len(w.chat.sent) != 3 {
+		t.Fatalf("above the threshold and a failed gate: sent %q", w.chat.sent)
+	}
 }
 
 func TestCheckInsSkipRecentTalkAndTwoUnansweredCheckIns(t *testing.T) {

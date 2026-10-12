@@ -66,6 +66,7 @@ var roleInfo = map[string][2]string{
 	llm.RoleTextReader:    {"Text reader", "pages and documents for web_fetch and read_document"},
 	llm.RoleTranscription: {"Voice transcription", "the /audio/transcriptions endpoint"},
 	llm.RoleEmbedding:     {"Embeddings", "search by meaning, the /embeddings endpoint"},
+	llm.RoleCheckInGate:   {"Check-in gate", "a decision model, asked before a check-in when the gate is on"},
 }
 
 // Notices after a redirect, by the saved query value.
@@ -122,7 +123,7 @@ func (a *Admin) showAI(w http.ResponseWriter, r *http.Request, sess *session, st
 	for _, m := range llm.Models {
 		info := roleInfo[m.Role]
 		v.Roles = append(v.Roles, roleRow{Key: m.Role, Label: info[0], Hint: info[1], Default: m, Set: roles[m.Role],
-			NoEffort: m.Role == llm.RoleTranscription || m.Role == llm.RoleEmbedding})
+			NoEffort: m.Role == llm.RoleTranscription || m.Role == llm.RoleEmbedding || m.Role == llm.RoleCheckInGate})
 	}
 	edit(&v)
 	a.render(w, "ai", status, v)
@@ -251,6 +252,9 @@ func (a *Admin) roleFromForm(ctx context.Context, r *http.Request, m llm.Model) 
 		p, err := a.AI.Provider(ctx, role.ProviderID)
 		if err != nil || p == nil {
 			return role, "this provider no longer exists."
+		}
+		if m.Role == llm.RoleCheckInGate && p.Kind != dom.ProviderOpenRouter {
+			return role, "only OpenRouter serves decision models."
 		}
 		// The default ids are OpenRouter's (vendor/model), another API would not know them
 		if p.Kind != dom.ProviderOpenRouter && role.Model == "" {

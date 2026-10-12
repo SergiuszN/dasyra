@@ -81,6 +81,9 @@
         .role .hint { color: var(--ink-3); font-size: 12px; }
         .role.price { grid-template-columns: minmax(150px, 1.2fr) repeat(4, 1fr); }
         @media (max-width: 760px) { .role, .role.price { grid-template-columns: 1fr; } }
+        .hours { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; }
+        .hour { display: flex; align-items: center; gap: 6px; font-size: 13px; font-variant-numeric: tabular-nums; }
+        .hour input { width: auto; }
     </style>
 </head>
 <body>
@@ -104,6 +107,7 @@
             {{end}}
         </nav>
         <a class="nav" href="/panel/ai">Models</a>
+        <a class="nav" href="/panel/check-ins">Check-ins</a>
         <form method="post" action="/logout">
             <input type="hidden" name="csrf" value="{{.CSRF}}">
             <button class="link" type="submit">Log out</button>

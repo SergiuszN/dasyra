@@ -65,7 +65,7 @@ func (c *Client) try(ctx context.Context, r llm.Request) (llm.Message, error) {
 	defer cancel()
 
 	var resp response
-	if err := c.post(ctx, "/chat/completions", "application/json", bytes.NewReader(body), &resp); err != nil {
+	if err := c.post(ctx, c.url("/chat/completions"), "application/json", bytes.NewReader(body), &resp); err != nil {
 		return llm.Message{}, err
 	}
 	if resp.Usage != nil {
@@ -78,8 +78,8 @@ func (c *Client) try(ctx context.Context, r llm.Request) (llm.Message, error) {
 	return m, nil
 }
 
-func (c *Client) post(ctx context.Context, path, contentType string, body io.Reader, out any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.url(path), body)
+func (c *Client) post(ctx context.Context, url, contentType string, body io.Reader, out any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return err
 	}
