@@ -1,0 +1,37 @@
+# Private SearXNG for Dasyra's web_search, reachable only inside the compose network as http://searxng:8080
+use_default_settings:
+  # Only engines that gave relevant results from the server's IP. Bing (and startpage/qwant/mojeek) served
+  # random junk (Lidl, Windows help, blockchain) or captchas to the bot, which drowned the good results
+  engines:
+    keep_only:
+      - google cse
+      - duckduckgo
+      - brave
+      - yahoo
+      - yandex
+      - wikipedia
+
+server:
+  # Overridden by SEARXNG_SECRET; the instance is never exposed, so the default is harmless
+  secret_key: "change-me"  # any random string; this instance is never exposed
+  limiter: false
+  image_proxy: false
+
+search:
+  formats: [html, json]
+  # Moderate, keeps spam/adult pages out of sources without filtering normal results
+  safe_search: 1
+  # Defaults bench an engine for 1h-1 day after a single captcha or 429, too long for our low traffic
+  suspended_times:
+    SearxEngineAccessDenied: 600
+    SearxEngineCaptcha: 600
+    SearxEngineTooManyRequests: 300
+    cf_SearxEngineCaptcha: 3600
+    cf_SearxEngineAccessDenied: 3600
+    recaptcha_SearxEngineCaptcha: 3600
+
+engines:
+  - name: yahoo
+    disabled: false
+  - name: yandex
+    disabled: false

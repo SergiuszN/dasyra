@@ -1,0 +1,159 @@
+{{define "provider-fields"}}
+<div class="fields">
+    <label class="field">Name
+        <input name="name" value="{{.Name}}" maxlength="64" required placeholder="OpenAI, GLM, Ollama…">
+    </label>
+    <label class="field">Type
+        <select name="kind">
+            {{range $.Kinds}}<option value="{{.Value}}"{{if eq .Value $.Kind}} selected{{end}}>{{.Label}}</option>{{end}}
+        </select>
+    </label>
+    <label class="field">Base URL
+        <input name="base_url" value="{{.BaseURL}}" placeholder="https://api.openai.com/v1">
+    </label>
+    <label class="field">Key
+        <input name="key" type="password" autocomplete="off" placeholder="{{if .ID}}{{.Masked}}, leave empty to keep{{else}}sk-…{{end}}">
+    </label>
+</div>
+{{end}}
+
+{{define "ai"}}{{template "head" .Title}}
+<header class="top">
+    <div>
+        <div class="crumbs"><a href="/panel">← Spend</a></div>
+        <h1>{{.Title}}</h1>
+    </div>
+    <form method="post" action="/logout">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <button class="link" type="submit">Log out</button>
+    </form>
+</header>
+
+{{with .Notice}}<div class="flash">{{.}}</div>{{end}}
+{{with .Error}}<div class="flash error">{{.}}</div>{{end}}
+
+<section class="card">
+    <h2>Providers</h2>
+    {{range .Providers}}
+        <form class="provider" method="post" action="/panel/ai/providers">
+            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="id" value="{{.ID}}">
+            <div class="meta">{{.KindLabel}} · key {{.Masked}}{{if .Uses}} · roles: {{range $i, $u := .Uses}}{{if $i}}, {{end}}{{$u}}{{end}}{{end}}</div>
+            {{template "provider-fields" .Form}}
+            <div class="actions">
+                <button class="btn primary" type="submit">Save</button>
+                <button class="btn" type="submit" formaction="/panel/ai/providers/check" formnovalidate>Check</button>
+                <button class="btn danger" type="submit" formaction="/panel/ai/providers/delete" formnovalidate
+                        onclick="return confirm('Delete this provider? Its roles go back to the defaults.')">Delete</button>
+            </div>
+        </form>
+    {{else}}
+        <div class="muted">No providers of your own yet: every role goes through OpenRouter with the key from .env.</div>
+    {{end}}
+</section>
+
+<section class="card">
+    <h2>Add a provider</h2>
+    <form method="post" action="/panel/ai/providers">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        {{template "provider-fields" .Draft}}
+        <div class="actions">
+            <button class="btn primary" type="submit">Add</button>
+            <button class="btn" type="submit" formaction="/panel/ai/providers/check">Check</button>
+        </div>
+    </form>
+    <p class="note">
+        OpenAI-compatible means any API in the OpenAI <code>/chat/completions</code> format: OpenAI (https://api.openai.com/v1),
+        GLM (https://api.z.ai/api/paas/v4), DeepSeek (https://api.deepseek.com), Groq, Ollama (http://host:11434/v1), vLLM, LiteLLM.
+        Only standard fields are sent to it; such APIs report no cost, so it is counted from the prices below.
+        Keys are stored in the database (and its backups) and never shown on the page.
+    </p>
+</section>
+
+<section class="card">
+    <h2>Roles</h2>
+    <form method="post" action="/panel/ai/roles">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        {{range $r := .Roles}}
+            <div class="role">
+                <div>
+                    <div class="name">{{$r.Label}}</div>
+                    <div class="hint">{{$r.Hint}}</div>
+                </div>
+                <label class="field">Provider
+                    <select name="provider_{{$r.Key}}">
+                        <option value="0">OpenRouter (.env)</option>
+                        {{range $.Providers}}<option value="{{.ID}}"{{if eq .ID $r.Set.ProviderID}} selected{{end}}>{{.Name}}</option>{{end}}
+                    </select>
+                </label>
+                <label class="field">Model
+                    <input name="model_{{$r.Key}}" value="{{$r.Set.Model}}" maxlength="128" placeholder="{{$r.Default.ID}}">
+                </label>
+                {{if $r.NoEffort}}<div></div>{{else}}
+                    <label class="field">Effort
+                        <select name="effort_{{$r.Key}}">
+                            <option value="">default ({{$r.Default.Effort}})</option>
+                            {{range $.Efforts}}<option value="{{.Value}}"{{if eq .Value $r.Set.Effort}} selected{{end}}>{{.Label}}</option>{{end}}
+                        </select>
+                    </label>
+                {{end}}
+            </div>
+        {{end}}
+        <div class="actions">
+            <button class="btn primary" type="submit">Save roles</button>
+        </div>
+    </form>
+    <p class="note">
+        An empty model means the default from the code (greyed out in the field); a provider other than OpenRouter needs a model.
+        Effort none on an OpenAI-compatible provider means "don't send reasoning_effort", for models that don't know it.
+        Changes apply from the next call, no deploy needed.
+    </p>
+</section>
+<section class="card">
+    <h2>Prices</h2>
+    {{if not .Prices}}
+        <div class="muted">Every role goes through OpenRouter, which reports the cost itself. Models of roles moved to an OpenAI-compatible provider show up here.</div>
+    {{else}}
+        <form method="post" action="/panel/ai/prices">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            {{range $i, $p := .Prices}}
+                <div class="role price">
+                    <div>
+                        <div class="name">{{$p.Model}}</div>
+                        <div class="hint">{{$p.Provider}}{{if not $p.Saved}} · no price set, counted as $0{{end}}</div>
+                        <input type="hidden" name="price_{{$i}}_provider" value="{{$p.ProviderID}}">
+                        <input type="hidden" name="price_{{$i}}_model" value="{{$p.Model}}">
+                    </div>
+                    {{if $p.Audio}}
+                        <label class="field">$ per minute
+                            <input name="price_{{$i}}_per_minute" value="{{$p.PerMinute}}" inputmode="decimal" placeholder="0.006">
+                        </label>
+                    {{else}}
+                        <label class="field">Input, $/1M
+                            <input name="price_{{$i}}_input" value="{{$p.Input}}" inputmode="decimal">
+                        </label>
+                        <label class="field">Cache read
+                            <input name="price_{{$i}}_cache_read" value="{{$p.CacheRead}}" inputmode="decimal">
+                        </label>
+                        <label class="field">Cache write
+                            <input name="price_{{$i}}_cache_write" value="{{$p.CacheWrite}}" inputmode="decimal">
+                        </label>
+                        <label class="field">Output, $/1M
+                            <input name="price_{{$i}}_output" value="{{$p.Output}}" inputmode="decimal">
+                        </label>
+                    {{end}}
+                </div>
+            {{end}}
+            <div class="actions">
+                <button class="btn primary" type="submit">Save prices</button>
+                <button class="btn" type="submit" formaction="/panel/ai/prices/suggest">Fill in from the OpenRouter catalog</button>
+            </div>
+        </form>
+    {{end}}
+    <p class="note">
+        Prices are in US dollars per million tokens. A call's cost is counted from them when the provider didn't report it, and is
+        marked with ≈. Cached tokens and cache writes are part of the input and use their own prices, reasoning uses the output price.
+        A price of 0 is a real zero (your own Ollama, say); an empty field removes the price. Past calls are not recounted.
+    </p>
+</section>
+{{template "foot"}}{{end}}

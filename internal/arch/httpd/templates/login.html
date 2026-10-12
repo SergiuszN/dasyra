@@ -1,0 +1,16 @@
+{{define "login"}}{{template "head" "Log in"}}
+<section class="card" style="max-width: 360px; margin: 12vh auto 0;">
+    <h2>Dasyra · admin</h2>
+    {{if not .Configured}}
+        <p class="muted">Login is closed: set ADMIN_LOGIN and ADMIN_PASSWORD in the environment.</p>
+    {{else}}
+        <form method="post" action="/login" style="display:grid;gap:10px">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <input name="login" placeholder="Login" autocomplete="username" required autofocus style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit">
+            <input name="password" type="password" placeholder="Password" autocomplete="current-password" required style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit">
+            {{if .Error}}<div style="color:var(--danger);font-size:13px">{{.Error}}</div>{{end}}
+            <button type="submit" style="padding:9px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;font-weight:600;cursor:pointer">Log in</button>
+        </form>
+    {{end}}
+</section>
+{{template "foot"}}{{end}}

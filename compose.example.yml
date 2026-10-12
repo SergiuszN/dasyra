@@ -1,0 +1,24 @@
+# Self-hosting: Dasyra and a private SearXNG. Put .env next to this file (see .env.example), then
+#   docker compose -f compose.example.yml up -d
+# and point the Telegram webhook at https://<your host>/telegram/webhook with TELEGRAM_WEBHOOK_SECRET.
+services:
+  dasyra:
+    image: ghcr.io/sergiuszn/dasyra:main
+    restart: unless-stopped
+    # Replies and jobs in progress get to finish on a restart
+    stop_grace_period: 150s
+    env_file: .env
+    environment:
+      DB_PATH: /data/db.sqlite
+      SEARXNG_URL: http://searxng:8080
+    volumes:
+      # SQLite keeps its -wal and -shm files next to the database
+      - ./data:/data
+    ports:
+      - "8080:8080"
+
+  searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    volumes:
+      - ./searxng:/etc/searxng:ro

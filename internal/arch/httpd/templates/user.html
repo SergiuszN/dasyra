@@ -1,0 +1,9 @@
+{{define "user"}}{{template "head" .Title}}
+{{template "header" .}}
+{{template "tiles" .}}
+{{template "chart" .Chart}}
+{{template "breakdowns" .}}
+{{with .User}}
+    <p class="note">With us since {{.CreatedAt.Format "2 Jan 2006"}}, time zone {{.Timezone}}.</p>
+{{end}}
+{{template "foot"}}{{end}}

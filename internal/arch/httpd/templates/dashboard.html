@@ -1,0 +1,42 @@
+{{define "dashboard"}}{{template "head" .Title}}
+{{template "header" .}}
+{{template "tiles" .}}
+{{template "chart" .Chart}}
+<section class="card">
+    <h2>By user</h2>
+    {{if not .Users}}
+        <div class="muted">No data yet.</div>
+    {{else}}
+        <div class="scroll">
+            <table>
+                <thead>
+                <tr><th>User</th><th>Spend</th><th>Replies</th><th>Per reply</th><th>Input</th><th>Cached</th><th>Output</th><th>Last call</th></tr>
+                </thead>
+                <tbody>
+                {{range .Users}}
+                    <tr>
+                        <td><a href="/panel/users/{{.UserID}}?period={{$.Period}}">{{.Label}}</a></td>
+                        <td>
+                            {{money .Cost}} <span class="muted">{{percent .Cost .Total}}</span>
+                            <span class="share" style="width: {{.Bar}}px"></span>
+                        </td>
+                        <td>{{if gt .UserID 0}}{{.Replies}}{{end}}</td>
+                        <td>{{if gt .Replies 0}}{{per .Cost .Replies}}{{end}}</td>
+                        <td>{{tokens .PromptTokens}}</td>
+                        <td>{{percent (float .CachedTokens) (float .PromptTokens)}}</td>
+                        <td>{{tokens .CompletionTokens}}</td>
+                        <td class="muted">{{stamp .LastAt}}</td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
+        </div>
+    {{end}}
+</section>
+{{template "breakdowns" .}}
+<p class="note">
+    Cost comes from OpenRouter's response (usage.cost); for other providers it is counted from the prices on the Models page (≈), without a price it is $0. Times are server time.
+    {{with .TrackedSince}}Tracked since {{.}}.{{end}}
+    "Per reply" includes everything behind the replies: check-ins, digests, search, reflection.
+</p>
+{{template "foot"}}{{end}}

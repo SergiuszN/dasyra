@@ -1,0 +1,206 @@
+{{define "head"}}<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>{{.}} · Dasyra</title>
+    <style>
+        :root {
+            --bg: #f6f6f3; --surface: #ffffff; --ink: #1d1d1b; --ink-2: #5d5d58; --ink-3: #8e8e88;
+            --line: #e4e4de; --accent: #2f6fdf; --accent-soft: #dbe6fb; --bar: #2f6fdf; --danger: #c0392b;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #151514; --surface: #1f1f1d; --ink: #ececea; --ink-2: #a9a9a3; --ink-3: #75756f;
+                --line: #33332f; --accent: #7aa7f5; --accent-soft: #24324d; --bar: #6b9cf2; --danger: #ef7a6c;
+            }
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }
+        header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+        header.top h1 { font-size: 20px; margin: 0; }
+        header.top .crumbs { color: var(--ink-3); font-size: 13px; }
+        .periods { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+        .periods a { padding: 4px 10px; border-radius: 6px; color: var(--ink-2); font-size: 13px; }
+        .periods a.on { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+        .periods a:hover { text-decoration: none; color: var(--ink); }
+        .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+        .tile .label { color: var(--ink-3); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+        .tile .value { font-size: 24px; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
+        .tile .sub { color: var(--ink-2); font-size: 12px; }
+        .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+        .card h2 { font-size: 15px; margin: 0 0 12px; }
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid2 .card { margin-bottom: 0; }
+        .grid2 > *, .card { min-width: 0; }
+        @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; gap: 20px; } }
+        .scroll { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+        th, td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+        th { color: var(--ink-3); font-weight: 500; font-size: 12px; }
+        th:first-child, td:first-child { text-align: left; white-space: normal; }
+        tr:last-child td { border-bottom: 0; }
+        td .muted, .muted { color: var(--ink-3); }
+        .share { display: inline-block; height: 6px; border-radius: 3px; background: var(--bar); vertical-align: middle; margin-left: 6px; }
+        .chart { display: flex; align-items: flex-end; gap: 2px; height: 160px; padding-top: 8px; border-bottom: 1px solid var(--line); }
+        .chart .col { flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; position: relative; min-width: 2px; }
+        .chart .col .bar { width: 100%; background: var(--bar); border-radius: 4px 4px 0 0; min-height: 1px; }
+        .chart .col.zero .bar { background: var(--line); }
+        .chart .col:hover .bar { opacity: .75; }
+        .chart .col .tip { display: none; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); font-size: 12px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 2; pointer-events: none; }
+        .chart .col:hover .tip { display: block; }
+        .chart .col:first-child .tip { left: 0; transform: none; }
+        .chart .col:last-child .tip { left: auto; right: 0; transform: none; }
+        .axis { display: flex; justify-content: space-between; color: var(--ink-3); font-size: 12px; margin-top: 6px; }
+        button.link { background: none; border: 0; color: var(--ink-2); font: inherit; font-size: 13px; cursor: pointer; padding: 0; }
+        button.link:hover { color: var(--ink); text-decoration: underline; }
+        .note { color: var(--ink-3); font-size: 12px; margin-top: 8px; }
+        .nav { font-size: 13px; }
+        .flash { border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; background: var(--accent-soft); }
+        .flash.error { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+        .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; align-items: end; }
+        label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-3); min-width: 0; }
+        input, select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; width: 100%; min-width: 0; }
+        input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+        .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+        .btn { font: inherit; font-size: 13px; border-radius: 6px; padding: 6px 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+        .btn:hover { border-color: var(--accent); }
+        .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+        .btn.danger { color: var(--danger); }
+        .provider { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
+        .provider:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+        .provider .meta { color: var(--ink-3); font-size: 12px; margin-bottom: 8px; }
+        .role { display: grid; grid-template-columns: minmax(150px, 1.1fr) 1fr 1.4fr 0.8fr; gap: 10px; align-items: end; padding: 10px 0; border-bottom: 1px solid var(--line); }
+        .role:last-of-type { border-bottom: 0; }
+        .role .name { font-weight: 600; }
+        .role .hint { color: var(--ink-3); font-size: 12px; }
+        .role.price { grid-template-columns: minmax(150px, 1.2fr) repeat(4, 1fr); }
+        @media (max-width: 760px) { .role, .role.price { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="wrap">
+{{end}}
+
+{{define "foot"}}</div>
+</body>
+</html>
+{{end}}
+
+{{define "header"}}
+<header class="top">
+    <div>
+        {{if .Crumbs}}<div class="crumbs"><a href="{{.Crumbs}}">← All users</a></div>{{end}}
+        <h1>{{.Title}}</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <nav class="periods">
+            {{range .Periods}}<a href="{{$.Path}}?period={{.Key}}" class="{{if eq .Key $.Period}}on{{end}}">{{.Label}}</a>
+            {{end}}
+        </nav>
+        <a class="nav" href="/panel/ai">Models</a>
+        <form method="post" action="/logout">
+            <input type="hidden" name="csrf" value="{{.CSRF}}">
+            <button class="link" type="submit">Log out</button>
+        </form>
+    </div>
+</header>
+{{end}}
+
+{{define "tiles"}}{{$t := .Totals}}
+<section class="tiles">
+    <div class="tile">
+        <div class="label">Spend</div>
+        <div class="value">{{money $t.Cost}}</div>
+        <div class="sub">{{num $t.Calls}} calls</div>
+    </div>
+    {{if .ShowReplies}}
+        <div class="tile">
+            <div class="label">Dasyra replies</div>
+            <div class="value">{{num .Replies}}</div>
+            <div class="sub">{{if gt .Replies 0}}{{per $t.Cost .Replies}} per reply{{else}}&nbsp;{{end}}</div>
+        </div>
+    {{end}}
+    <div class="tile">
+        <div class="label">Input tokens</div>
+        <div class="value">{{tokens $t.PromptTokens}}</div>
+        <div class="sub">cached {{percent (float $t.CachedTokens) (float $t.PromptTokens)}}{{if gt $t.CacheWriteTokens 0}}, written {{tokens $t.CacheWriteTokens}}{{end}}</div>
+    </div>
+    <div class="tile">
+        <div class="label">Output tokens</div>
+        <div class="value">{{tokens $t.CompletionTokens}}</div>
+        <div class="sub">reasoning {{percent (float $t.ReasoningTokens) (float $t.CompletionTokens)}}</div>
+    </div>
+    {{if gt $t.AudioSeconds 0.0}}
+        <div class="tile">
+            <div class="label">Voice</div>
+            <div class="value">{{minutes $t.AudioSeconds}}</div>
+            <div class="sub">transcribed</div>
+        </div>
+    {{end}}
+</section>
+{{end}}
+
+{{define "chart"}}
+<section class="card">
+    <h2>Spend by day</h2>
+    {{if not .Cols}}
+        <div class="muted">No data yet.</div>
+    {{else}}
+        <div class="chart" role="img" aria-label="Spend by day">
+            {{range .Cols}}
+                <div class="col{{if le .Cost 0.0}} zero{{end}}">
+                    <div class="bar" style="height: {{.Height}}%"></div>
+                    <div class="tip">{{.Day}} · {{money .Cost}}</div>
+                </div>
+            {{end}}
+        </div>
+        <div class="axis">
+            <span>{{.First}}</span>
+            {{if .ShowMax}}<span>max {{money .Max}} a day</span>{{end}}
+            <span>{{.Last}}</span>
+        </div>
+    {{end}}
+</section>
+{{end}}
+
+{{define "breakdown"}}
+<section class="card">
+    <h2>{{.Heading}}</h2>
+    {{if not .Rows}}
+        <div class="muted">No data yet.</div>
+    {{else}}
+        <div class="scroll">
+            <table>
+                <thead>
+                <tr><th></th><th>Spend</th><th>Calls</th><th>Input</th><th>Cached</th><th>Output</th></tr>
+                </thead>
+                <tbody>
+                {{range .Rows}}
+                    <tr>
+                        <td>{{.Label}}{{if gt .Unpriced 0}} <span class="muted">· no price set</span>{{end}}</td>
+                        <td>{{if gt .Estimated 0}}≈{{end}}{{money .Cost}} <span class="muted">{{percent .Cost $.Total}}</span></td>
+                        <td>{{num .Calls}}</td>
+                        <td>{{tokens .PromptTokens}}</td>
+                        <td>{{percent (float .CachedTokens) (float .PromptTokens)}}</td>
+                        <td>{{tokens .CompletionTokens}}{{if gt .AudioSeconds 0.0}} <span class="muted">{{minutes .AudioSeconds}}</span>{{end}}</td>
+                    </tr>
+                {{end}}
+                </tbody>
+            </table>
+        </div>
+    {{end}}
+</section>
+{{end}}
+
+{{define "breakdowns"}}
+<div class="grid2">
+    {{template "breakdown" .Purposes}}
+    {{template "breakdown" .Models}}
+</div>
+{{end}}

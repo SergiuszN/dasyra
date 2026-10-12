@@ -1,0 +1,9 @@
+# Local SearXNG for `make run`: the bot itself runs on the host with long polling.
+services:
+  searxng:
+    container_name: dasyra_searxng
+    image: searxng/searxng:latest
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./searxng:/etc/searxng:ro
