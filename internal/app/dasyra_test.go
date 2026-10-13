@@ -202,3 +202,12 @@ func TestPromptShowsTheToDoList(t *testing.T) {
 		t.Fatalf("prompt %s", prompt)
 	}
 }
+
+func TestEachModeRunsAsItsOwnRole(t *testing.T) {
+	for run, role := range map[Run]string{{}: llm.RoleDasyra, {Proactive: true}: llm.RoleCheckIn,
+		{Proactive: true, Trigger: "Due event"}: llm.RoleReminder, {Trigger: "follow-up"}: llm.RoleDasyra} {
+		if got := run.model().Role; got != role {
+			t.Errorf("%+v runs as %s, want %s", run, got, role)
+		}
+	}
+}

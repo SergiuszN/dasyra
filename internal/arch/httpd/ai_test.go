@@ -98,12 +98,12 @@ func TestRolesNeedAModelOffOpenRouterAndResetOnDelete(t *testing.T) {
 
 	roles := url.Values{"csrf": {token}, "provider_dasyra": {"1"}, "provider_reflection": {"0"}, "model_reflection": {"openai/gpt-6-luna"}, "effort_reflection": {"low"}}
 	status, body := post(t, c, s.URL+"/panel/ai/roles", roles)
-	if status != http.StatusBadRequest || !strings.Contains(body, "Dasyra: set a model for the provider Ollama.") {
+	if status != http.StatusBadRequest || !strings.Contains(body, "Dasyra: chat: set a model for the provider Ollama.") {
 		t.Fatalf("role without a model: %d", status)
 	}
 	roles.Set("model_dasyra", "qwen3:32b")
 	if _, body = post(t, c, s.URL+"/panel/ai/roles", roles); !strings.Contains(body, "Roles saved") || !strings.Contains(body, `value="qwen3:32b"`) ||
-		!strings.Contains(body, "roles: Dasyra") || !strings.Contains(body, `<option value="low" selected>`) {
+		!strings.Contains(body, "roles: Dasyra: chat") || !strings.Contains(body, `<option value="low" selected>`) {
 		t.Fatalf("saved roles: %s", body)
 	}
 

@@ -11,6 +11,8 @@ const (
 // Roles, the keys the admin panel settings are stored under.
 const (
 	RoleDasyra        = "dasyra"
+	RoleCheckIn       = "dasyra_check_in"
+	RoleReminder      = "dasyra_reminder"
 	RoleReflection    = "reflection"
 	RoleWebSearch     = "web_search"
 	RoleTextReader    = "text_reader"
@@ -27,9 +29,13 @@ type Model struct {
 }
 
 var (
-	// Dasyra herself: chat, check-ins, reminders and digests. Haiku costs the same as Luna and followed the prompt
+	// Dasyra herself in the chat: replies to the user. Haiku costs the same as Luna and followed the prompt
 	// better on the testers' problem cases; on medium it recapped in circles and skipped memory saves, so high
 	Dasyra = Model{RoleDasyra, haiku, "high"}
+	// Dasyra writing first at the check-in hours, most runs end in NO_MESSAGE
+	DasyraCheckIn = Model{RoleCheckIn, haiku, "high"}
+	// Dasyra on a due event: reminders, digests and regular tasks
+	DasyraReminder = Model{RoleReminder, haiku, "high"}
 	// Nightly memory upkeep
 	Reflection = Model{RoleReflection, haiku, "medium"}
 	// Answer synthesis and evidence evaluation in web_search answer/research modes
@@ -47,4 +53,4 @@ var (
 )
 
 // Models are all the roles with their defaults, in the order the admin panel shows them.
-var Models = []Model{Dasyra, Reflection, WebSearch, TextReader, Transcription, Embedding, CheckInGate}
+var Models = []Model{Dasyra, DasyraCheckIn, DasyraReminder, Reflection, WebSearch, TextReader, Transcription, Embedding, CheckInGate}

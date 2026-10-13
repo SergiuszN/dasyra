@@ -44,6 +44,17 @@ func (r Run) purpose() string {
 	return llm.PurposeReminder
 }
 
+// model is the role Dasyra runs as, each mode can be set apart in the admin panel.
+func (r Run) model() llm.Model {
+	switch {
+	case !r.Proactive:
+		return llm.Dasyra
+	case r.Trigger == "":
+		return llm.DasyraCheckIn
+	}
+	return llm.DasyraReminder
+}
+
 // Dasyra writes replies, check-ins and reminders: one endless chat with memory and a calendar.
 type Dasyra struct {
 	Users     dom.Users
@@ -107,7 +118,7 @@ func (d *Dasyra) speak(ctx context.Context, u *dom.User, run Run, followUp bool)
 		defer d.typing(ctx, u)()
 	}
 	calls := &callLog{}
-	answer := dom.Answer(llm.Loop{Client: d.AI, Model: llm.Dasyra, MaxIterations: maxIterations, ErrorText: errorText, Log: d.Log}.
+	answer := dom.Answer(llm.Loop{Client: d.AI, Model: run.model(), MaxIterations: maxIterations, ErrorText: errorText, Log: d.Log}.
 		Run(ctx, messages, d.Tools.Specs(), d.executor(session, calls)))
 
 	if !d.worthSending(u, run, answer) {

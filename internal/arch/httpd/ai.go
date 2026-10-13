@@ -60,7 +60,9 @@ var kinds = []option{{dom.ProviderOpenRouter, "OpenRouter"}, {dom.ProviderOpenAI
 var efforts = []option{{"none", "none"}, {"low", "low"}, {"medium", "medium"}, {"high", "high"}}
 
 var roleInfo = map[string][2]string{
-	llm.RoleDasyra:        {"Dasyra", "chat, check-ins, reminders, digests"},
+	llm.RoleDasyra:        {"Dasyra: chat", "replies to the user"},
+	llm.RoleCheckIn:       {"Dasyra: check-ins", "writing first at the check-in hours"},
+	llm.RoleReminder:      {"Dasyra: reminders", "due events, digests, regular tasks"},
 	llm.RoleReflection:    {"Reflection", "nightly memory upkeep"},
 	llm.RoleWebSearch:     {"Web search", "answer synthesis in web_search answer/research"},
 	llm.RoleTextReader:    {"Text reader", "pages and documents for web_fetch and read_document"},
