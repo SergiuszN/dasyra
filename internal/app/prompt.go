@@ -18,15 +18,13 @@ func promptText(name string, vars ...string) string {
 	return strings.NewReplacer(vars...).Replace(string(text))
 }
 
-// systemPrompt is Dasyra's persona with the user's profile, or the onboarding rules while there is none;
-// a check-in adds the proactive rules.
+// systemPrompt keeps the getting-to-know guidance with partial profiles too: saving a language preference
+// does not finish onboarding. The stable guidance precedes the profile; a check-in adds its own rules.
 func systemPrompt(u *dom.User, checkIn bool, collections []string) string {
 	name := u.DisplayName()
-	prompt := promptText("dasyra", "{name}", name)
+	prompt := promptText("dasyra", "{name}", name) + promptText("onboarding", "{name}", name)
 	if u.HasProfile() {
 		prompt += "\n\nProfile of " + name + ":\n" + strings.TrimSpace(u.Profile)
-	} else {
-		prompt += promptText("onboarding", "{name}", name)
 	}
 	if len(collections) > 0 {
 		prompt += "\n\nCollections of " + name + ": " + strings.Join(collections, ", ")
@@ -38,7 +36,7 @@ func systemPrompt(u *dom.User, checkIn bool, collections []string) string {
 	// Only users without a profile get here with their last message unanswered, see CheckIns.needsNudge
 	nudge := ""
 	if !u.HasProfile() {
-		nudge = "\nIf " + name + " did not reply to your last message, send one short, friendly, no-pressure nudge that is easy to answer, without repeating your previous question."
+		nudge = "\nFor this one introductory nudge, an unanswered greeting is an exception: send one short, friendly, no-pressure nudge to " + name + " that is easy to answer, without repeating the previous question."
 	}
 	return prompt + promptText("checkin", "{name}", name, "{nudge}", nudge)
 }

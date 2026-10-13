@@ -27,7 +27,7 @@ func (t UpdateMemory) Run(ctx context.Context, s *Session, a Args) (string, erro
 		return "Error: id and content are required.", nil
 	}
 	if !s.Memories.Has(id) {
-		return fmt.Sprintf("Error: memory #%d was not read in this session, find it with list_memory first to see its content.", id), nil
+		return fmt.Sprintf("Error: memory #%d was not read in this session, find it with list_memories first to see its content.", id), nil
 	}
 
 	m, err := t.Memories.Get(ctx, s.User.ID, id)

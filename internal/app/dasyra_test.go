@@ -42,6 +42,22 @@ func TestPromptOrderGoesFromStableToVolatile(t *testing.T) {
 	}
 }
 
+func TestSavingOnlyLanguageDoesNotEndGettingToKnowTheUser(t *testing.T) {
+	w := newWorld(t, answers("Привет").thenCall("update_profile", `{"profile":"Respond in Russian. Goals and priorities are not known yet."}`))
+	w.user.Profile = ""
+	must(t, w.dasyra.Users.Update(ctx, w.user))
+	w.say(t, dom.RoleUser, "привет, давай по-русски", time.Date(2026, 11, 4, 10, 0, 0, 0, time.UTC))
+	w.dasyra.Speak(ctx, w.user, Run{})
+
+	w.dasyra.AI = answers("Давай познакомимся")
+	w.say(t, dom.RoleUser, "расскажу о своих планах", time.Date(2026, 11, 4, 10, 1, 0, 0, time.UTC))
+	w.dasyra.Speak(ctx, w.user, Run{})
+	prompt := w.dasyra.AI.(*script).requests[0].Messages[0].Text
+	if !strings.Contains(prompt, "Profile of Alex:\nRespond in Russian.") || !strings.Contains(prompt, "Getting to know Alex:") {
+		t.Fatalf("a language-only profile lost the getting-to-know guidance: %s", prompt)
+	}
+}
+
 func TestClosingMessageGetsAReaction(t *testing.T) {
 	w := newWorld(t, answers("REACTION: ❤️"))
 	w.say(t, dom.RoleUser, "спасибо, побежал", time.Now())
