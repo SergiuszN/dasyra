@@ -57,7 +57,7 @@ type option struct{ Value, Label string }
 
 var kinds = []option{{dom.ProviderOpenRouter, "OpenRouter"}, {dom.ProviderOpenAI, "OpenAI-compatible"}}
 
-var efforts = []option{{"none", "none"}, {"low", "low"}, {"medium", "medium"}, {"high", "high"}}
+var efforts = []option{{"none", "none"}, {"low", "low"}, {"medium", "medium"}, {"high", "high"}, {"xhigh", "xhigh"}}
 
 var roleInfo = map[string][2]string{
 	llm.RoleDasyra:        {"Dasyra: chat", "replies to the user"},
