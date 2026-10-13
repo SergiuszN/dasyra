@@ -1,4 +1,4 @@
-.PHONY: build test lint run up down
+.PHONY: build test lint run bench up down
 
 build: ## Build the bot
 	go build -o bin/dasyra ./cmd/dasyra
@@ -11,6 +11,9 @@ lint:
 
 run: build ## Local run with long polling, env from .env, SearXNG from `make up`
 	set -a; . ./.env; set +a; SEARXNG_URL=$${SEARXNG_URL:-http://localhost:8888} ./bin/dasyra poll
+
+bench: build ## Prompt scenarios, env from .env when present; pass flags in BENCH_ARGS
+	set -a; if [ -f .env ]; then . ./.env; fi; set +a; ./bin/dasyra bench $(BENCH_ARGS)
 
 up: ## Local SearXNG on :8888
 	docker compose up -d

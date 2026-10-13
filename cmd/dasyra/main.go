@@ -37,6 +37,8 @@ const usage = `usage: dasyra <command>
   chat [-as <user id>] [-at "2006-01-02 15:04"] <message>
              send a message as the owner (or another user, at another time) and print the reply,
              Telegram faked: live checks and replays on a DB copy
+  bench [-cases file] [-roles file] [-only ids] [-model id] [-effort level] [-out dir] [-list] [-dry-run]
+             replay prompt scenarios in isolated databases, print and save results for human review
   search [results|answer|research] <query>
              run one web search as the owner and print the result: checks that search works`
 
@@ -51,6 +53,10 @@ func main() {
 }
 
 func run(log *slog.Logger, cmd string) error {
+	// A bench never opens DB_PATH, binds a real chat or uses the production provider settings.
+	if cmd == "bench" {
+		return bench(log, os.Args[2:])
+	}
 	cfg, err := boot.ConfigFromEnv()
 	if err != nil {
 		return err

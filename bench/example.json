@@ -1,0 +1,19 @@
+[
+  {
+    "id": "example-reminder",
+    "title": "A reminder at an explicit time",
+    "group": "example",
+    "mode": "chat",
+    "at": "2026-11-04 10:00:00",
+    "user": {
+      "name": "Alex",
+      "profile": "Alex lives in London. Respond in English.",
+      "timezone": "Europe/London"
+    },
+    "message": "Remind me tomorrow at 14:00 to collect the library books.",
+    "review": [
+      "One calendar event for 2026-11-05 14:00 local time.",
+      "Confirm only after a successful tool result."
+    ]
+  }
+]

@@ -91,6 +91,9 @@ make run     # the bot with long polling, keys from .env
 make test
 ```
 
+For manual checks of prompt changes, use the [prompt bench](bench/README.md): replay fixed conversation scenarios
+in isolated databases and inspect replies, tool calls and changes to memory, tasks and calendar events.
+
 ## License
 
 [MIT](LICENSE): use it, change it, run it for your friends or your company.
