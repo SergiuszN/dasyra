@@ -17,7 +17,7 @@ const (
 	forgottenUntil = 30 * time.Minute
 )
 
-const dueTrigger = `EVENT DUE NOW: %[1]s. If this is a task you agreed to perform for %[2]s (a digest, summary or check), do that task now and send its result. Use its "skill" memory first (list_memories); reuse working sources and APIs with fetch_json. Search only for needed fresh evidence or a specific gap; when a page fails, find another source or public API rather than repeating it. Compare with the last successful check, including its period and latest item. Before replying, update the skill with the checked period, latest result, working source/API + complete jq filter, and useful failure notes. If nothing materially changed, send one short sentence saying so, without old details. Promise only the scheduled delivery: a recurring check is not continuous monitoring or an instant alert. Otherwise remind %[2]s about it now, briefly. Stay on this event, do not append unrelated questions or reminders. Do not reply NO_MESSAGE.`
+const dueTrigger = `EVENT DUE NOW: %[1]s. If this is work you agreed to perform for %[2]s, do it now without a new message. Start from its "skill" memory; reuse working sources/APIs and find another route for failed pages. Compare with the last successful check. Save the checked period, latest result, source/API + full jq filter and useful failure notes in the skill. If nothing changed, send one short sentence, not old details or promises of instant alerts. Otherwise remind %[2]s about it briefly. Stay on this event. Do not reply NO_MESSAGE.`
 
 // Reminders wakes Dasyra for due events and occurrences of recurring ones (digests, regular tasks),
 // and answers messages whose reply was killed midway.
