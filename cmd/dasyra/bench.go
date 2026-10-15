@@ -330,6 +330,9 @@ type benchTool struct {
 	calls *[]benchCall
 }
 
+// Enabled keeps a tool only some users have hidden the same way when wrapped.
+func (t benchTool) Enabled(s *tool.Session) bool { return tool.Enabled(t.Tool, s) }
+
 func (t benchTool) Run(ctx context.Context, s *tool.Session, args tool.Args) (string, error) {
 	var result string
 	var err error

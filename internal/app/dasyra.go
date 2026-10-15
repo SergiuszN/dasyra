@@ -63,6 +63,7 @@ type Dasyra struct {
 	Events    dom.Events
 	Notes     dom.Notes
 	Todos     dom.Todos
+	Cookbooks dom.Cookbooks // nil: no user has a cookbook
 	Recall    tool.Recall
 	ToolCalls dom.ToolCalls
 	Tools     *tool.Registry
@@ -103,6 +104,7 @@ func (d *Dasyra) hasNewMessage(ctx context.Context, u *dom.User, seen int64) boo
 // speak returns the newest message the stored reply has seen, false when nothing was stored.
 func (d *Dasyra) speak(ctx context.Context, u *dom.User, run Run, followUp bool) (int64, bool) {
 	session := tool.NewSession(u)
+	session.Cookbook = d.cookbook(ctx, u)
 	history, err := d.history(ctx, u)
 	if err != nil {
 		d.Log.Error("Failed to read history", "user_id", u.ID, "error", err)
@@ -119,7 +121,7 @@ func (d *Dasyra) speak(ctx context.Context, u *dom.User, run Run, followUp bool)
 	}
 	calls := &callLog{}
 	answer := dom.Answer(llm.Loop{Client: d.AI, Model: run.model(), MaxIterations: maxIterations, ErrorText: errorText, Log: d.Log}.
-		Run(ctx, messages, d.Tools.Specs(), d.executor(session, calls)))
+		Run(ctx, messages, d.Tools.Specs(session), d.executor(session, calls)))
 
 	if !d.worthSending(u, run, answer) {
 		return 0, false
@@ -141,6 +143,18 @@ func (d *Dasyra) speak(ctx context.Context, u *dom.User, run Run, followUp bool)
 	}
 	d.deliver(ctx, u, history, answer)
 	return seen, true
+}
+
+// cookbook is the user's recipe server, nil when none is connected or it can't be read: then the tools are just not there.
+func (d *Dasyra) cookbook(ctx context.Context, u *dom.User) *dom.Cookbook {
+	if d.Cookbooks == nil {
+		return nil
+	}
+	c, err := d.Cookbooks.Cookbook(ctx, u.ID)
+	if err != nil {
+		d.Log.Error("Failed to read the cookbook connection", "user_id", u.ID, "error", err)
+	}
+	return c
 }
 
 func (d *Dasyra) history(ctx context.Context, u *dom.User) (dom.History, error) {

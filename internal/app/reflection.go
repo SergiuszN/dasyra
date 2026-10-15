@@ -58,7 +58,7 @@ func (r *Reflection) Reflect(ctx context.Context, u *dom.User) error {
 	}
 
 	answer := llm.Loop{Client: r.AI, Model: llm.Reflection, MaxIterations: reflectionIterations, ErrorText: "I had trouble processing your request. Please try again.", Log: r.Log}.
-		Run(ctx, messages, r.Tools.Specs(), func(ctx context.Context, name, arguments string) string {
+		Run(ctx, messages, r.Tools.Specs(session), func(ctx context.Context, name, arguments string) string {
 			result, _ := r.Tools.Execute(ctx, session, name, arguments)
 			return result
 		})

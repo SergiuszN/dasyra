@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+
+	"dasyra/internal/dom"
 )
 
 // The outside world the web and document tools need, implemented in arch.
@@ -45,6 +47,28 @@ type Sender interface {
 // PDFText extracts the text layer of a PDF, "" for scans.
 type PDFText interface {
 	Extract(ctx context.Context, pdf []byte) string
+}
+
+// CookbookAPI is the user's recipe server, every call with their connection.
+type CookbookAPI interface {
+	// Search lists recipes by words and tags (all of them), all by name without words
+	Search(ctx context.Context, c dom.Cookbook, query string, tags []string, offset, limit int) ([]dom.Recipe, error)
+	Recipe(ctx context.Context, c dom.Cookbook, slug string) (*dom.Recipe, error) // nil when missing
+	// Import makes the server read a recipe page, Create saves one written here; both return the new slug
+	Import(ctx context.Context, c dom.Cookbook, url string) (string, error)
+	Create(ctx context.Context, c dom.Cookbook, r dom.Recipe) (string, error)
+	// Update changes the fields that are set (lists replace the old ones) and returns the slug, new after a rename
+	Update(ctx context.Context, c dom.Cookbook, slug string, r dom.Recipe) (string, error)
+	Plan(ctx context.Context, c dom.Cookbook, from, to string) ([]dom.PlanEntry, error)
+	AddToPlan(ctx context.Context, c dom.Cookbook, e dom.PlanEntry) error
+	RemoveFromPlan(ctx context.Context, c dom.Cookbook, id int64) error
+	ShoppingLists(ctx context.Context, c dom.Cookbook) ([]dom.ShoppingList, error) // without items
+	CreateList(ctx context.Context, c dom.Cookbook, name string) (dom.ShoppingList, error)
+	ShoppingList(ctx context.Context, c dom.Cookbook, id string) (*dom.ShoppingList, error)
+	AddToList(ctx context.Context, c dom.Cookbook, listID string, lines []string) error
+	AddRecipeToList(ctx context.Context, c dom.Cookbook, listID, slug string) error
+	CheckOff(ctx context.Context, c dom.Cookbook, itemID string) error
+	RemoveItem(ctx context.Context, c dom.Cookbook, itemID string) error
 }
 
 // ErrNotPublic is returned for URLs on the internal network: a page can talk the model into anything.

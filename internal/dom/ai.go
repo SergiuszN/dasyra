@@ -23,10 +23,7 @@ func (p AIProvider) MaskedKey() string {
 	if p.Key == "" {
 		return "no key"
 	}
-	if len(p.Key) <= 8 {
-		return "••••"
-	}
-	return "••••" + p.Key[len(p.Key)-4:]
+	return Mask(p.Key)
 }
 
 // AIRole is what one role (Dasyra, reflection, web search...) runs on. ProviderID 0 is OpenRouter with the key

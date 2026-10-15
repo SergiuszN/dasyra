@@ -29,11 +29,14 @@ type UsageReport interface {
 // Admin is the panel with AI costs and tokens, overall and per user, and the models each role runs on.
 // It stays closed while Login or Password is empty.
 type Admin struct {
-	Report  UsageReport
-	Users   dom.Users
-	AI      dom.AISettings
-	Plans   dom.CheckInPlans
-	CheckAI func(ctx context.Context, p dom.AIProvider) error // whether the provider answers with its key
+	Report UsageReport
+	Users  dom.Users
+	AI     dom.AISettings
+	Plans  dom.CheckInPlans
+	// Cookbooks are the recipe servers connected per user, CheckCookbook says whose the token is
+	Cookbooks     dom.Cookbooks
+	CheckCookbook func(ctx context.Context, c dom.Cookbook) (string, error)
+	CheckAI       func(ctx context.Context, p dom.AIProvider) error // whether the provider answers with its key
 	// SuggestPrices finds models in OpenRouter's catalog, a hint for the prices form
 	SuggestPrices   func(ctx context.Context, models []string) (map[string]dom.AIPrice, error)
 	Login, Password string
@@ -65,6 +68,9 @@ func (a *Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /logout", a.logout)
 	mux.HandleFunc("GET /panel", a.guard(a.dashboard))
 	mux.HandleFunc("GET /panel/users/{id}", a.guard(a.user))
+	mux.HandleFunc("POST /panel/users/{id}/cookbook", a.guard(a.saveCookbook))
+	mux.HandleFunc("POST /panel/users/{id}/cookbook/check", a.guard(a.checkCookbook))
+	mux.HandleFunc("POST /panel/users/{id}/cookbook/delete", a.guard(a.deleteCookbook))
 	mux.HandleFunc("GET /panel/ai", a.guard(a.aiPage))
 	mux.HandleFunc("POST /panel/ai/providers", a.guard(a.saveProvider))
 	mux.HandleFunc("POST /panel/ai/providers/check", a.guard(a.checkProvider))
@@ -153,6 +159,11 @@ func (a *Admin) dashboard(w http.ResponseWriter, r *http.Request, sess *session)
 }
 
 func (a *Admin) user(w http.ResponseWriter, r *http.Request, sess *session) {
+	a.showUser(w, r, sess, http.StatusOK, func(v *panelView) { v.Notice = cookbookNotices[r.URL.Query().Get("saved")] })
+}
+
+// showUser loads the user page, edit sets what the request adds to it.
+func (a *Admin) showUser(w http.ResponseWriter, r *http.Request, sess *session, status int, edit func(*panelView)) {
 	ctx, period := r.Context(), periodOf(r)
 	// 0 is the bucket of calls made on nobody's behalf
 	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -178,8 +189,15 @@ func (a *Admin) user(w http.ResponseWriter, r *http.Request, sess *session) {
 	if u != nil {
 		replies, _ := a.Report.RepliesByUser(ctx, a.since(ctx, from))
 		v.Replies, v.ShowReplies, v.User = replies[id], true, u
+		c, err := a.Cookbooks.Cookbook(ctx, id)
+		if err != nil {
+			a.fail(w, err)
+			return
+		}
+		v.Cookbook = cookbookFormOf(c)
 	}
-	a.render(w, "user", http.StatusOK, v)
+	edit(&v)
+	a.render(w, "user", status, v)
 }
 
 // fill loads what both pages show: tiles, the daily chart and the breakdowns.

@@ -28,6 +28,8 @@ type panelView struct {
 	Purposes, Models          breakdown
 	TrackedSince              string
 	User                      *dom.User
+	Cookbook                  cookbookForm // on the user page
+	Notice, Error             string
 }
 
 func (v panelView) Periods() any { return periods }

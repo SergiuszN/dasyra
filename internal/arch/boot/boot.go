@@ -12,6 +12,7 @@ import (
 	"dasyra/internal/app/tool"
 	"dasyra/internal/arch/httpd"
 	"dasyra/internal/arch/llmapi"
+	"dasyra/internal/arch/mealie"
 	"dasyra/internal/arch/schedule"
 	"dasyra/internal/arch/sqlite"
 	"dasyra/internal/arch/telegram"
@@ -25,6 +26,7 @@ type App struct {
 	Users      sqlite.Users
 	Invites    sqlite.Invites
 	Telegram   *telegram.Client
+	Cookbook   *mealie.Client
 	Dasyra     *app.Dasyra
 	Reflection *app.Reflection
 	Meaning    tool.Meaning
@@ -45,6 +47,7 @@ func build(work context.Context, cfg Config, db *sqlite.DB, log *slog.Logger, be
 	ids := &sqlite.IDs{}
 	users, messages, memories, events := sqlite.Users{DB: db}, sqlite.Messages{DB: db}, sqlite.Memories{DB: db}, sqlite.Events{DB: db}
 	toolCalls, notes, todos := sqlite.ToolCalls{DB: db}, sqlite.Notes{DB: db}, sqlite.Todos{DB: db}
+	cookbooks, cookbook := sqlite.Cookbooks{DB: db}, mealie.New()
 	ai := &llmapi.Router{Settings: sqlite.AISettings{DB: db}, Log: log,
 		Default: &llmapi.Client{Key: cfg.OpenRouterKey, Usage: sqlite.UsageLog{DB: db}, Log: log}}
 	chat := &telegram.Client{Token: cfg.TelegramToken, Log: log}
@@ -76,6 +79,11 @@ func build(work context.Context, cfg Config, db *sqlite.DB, log *slog.Logger, be
 		tool.FindNotes{Notes: notes, Meaning: meaning},
 		tool.SendNote{Notes: notes, Messages: messages, Chat: messenger, IDs: ids},
 		tool.DeleteNote{Notes: notes},
+		// Only for users with a cookbook connected in the admin panel
+		tool.FindRecipes{API: cookbook, Messages: messages, Chat: messenger, IDs: ids},
+		tool.SaveRecipe{API: cookbook},
+		tool.MealPlan{API: cookbook},
+		tool.ShoppingList{API: cookbook},
 		fetch,
 		tool.WebSearch{Search: web.NewSearch(cfg.SearxngURL, log), Fetch: fetch, AI: model, Log: log},
 		tool.FetchJSON{API: web.NewJSON(false)},
@@ -100,11 +108,11 @@ func build(work context.Context, cfg Config, db *sqlite.DB, log *slog.Logger, be
 		}
 	}
 
-	dasyra := &app.Dasyra{Users: users, Messages: messages, Memories: memories, Events: events, Notes: notes, Todos: todos, Recall: recall, ToolCalls: toolCalls,
+	dasyra := &app.Dasyra{Users: users, Messages: messages, Memories: memories, Events: events, Notes: notes, Todos: todos, Cookbooks: cookbooks, Recall: recall, ToolCalls: toolCalls,
 		Tools: tool.NewRegistry(log, chatTools...), AI: model, Chat: messenger, IDs: ids, Log: log, PartPause: 2 * time.Second}
 	bg := app.NewBackground(work)
 	return &App{
-		Config: cfg, DB: db, Meaning: meaning, Users: users, Invites: sqlite.Invites{DB: db}, Telegram: chat, Dasyra: dasyra, Work: bg, AI: ai, Log: log,
+		Config: cfg, DB: db, Meaning: meaning, Users: users, Invites: sqlite.Invites{DB: db}, Telegram: chat, Cookbook: cookbook, Dasyra: dasyra, Work: bg, AI: ai, Log: log,
 		Reflection: &app.Reflection{Users: users, Messages: messages, Memories: memories, Tools: tool.NewRegistry(log, reflectionTools...), AI: model, Log: log},
 		CheckIns:   &app.CheckIns{Users: users, Messages: messages, Plans: sqlite.Settings{DB: db}, Dasyra: dasyra, Gate: ai, Zone: cfg.ServerZone, Log: log},
 		Reminders:  &app.Reminders{Users: users, Messages: messages, Events: events, Dasyra: dasyra, Log: log},
@@ -161,7 +169,8 @@ func (a *App) Scheduler() *schedule.Scheduler {
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("POST /telegram/webhook", &telegram.Webhook{Secret: a.Config.WebhookSecret, Inbox: a.Inbox, Log: a.Log})
-	admin := &httpd.Admin{Report: sqlite.Report{DB: a.DB}, Users: a.Users, AI: sqlite.AISettings{DB: a.DB}, Plans: sqlite.Settings{DB: a.DB}, CheckAI: a.AI.Check, SuggestPrices: a.AI.SuggestPrices,
+	admin := &httpd.Admin{Report: sqlite.Report{DB: a.DB}, Users: a.Users, AI: sqlite.AISettings{DB: a.DB}, Plans: sqlite.Settings{DB: a.DB}, CheckAI: a.AI.Check,
+		Cookbooks: sqlite.Cookbooks{DB: a.DB}, CheckCookbook: a.Cookbook.Check, SuggestPrices: a.AI.SuggestPrices,
 		Login: a.Config.AdminLogin, Password: a.Config.AdminPassword, Log: a.Log}
 	admin.Register(mux)
 	return mux

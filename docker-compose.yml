@@ -7,3 +7,20 @@ services:
       - "8888:8080"
     volumes:
       - ./searxng:/etc/searxng:ro
+
+  # Local Mealie for the cookbook tools: connect it to a user in the admin panel (or the cookbooks table)
+  # with http://localhost:9925 and a token from its profile → API Tokens. First login changeme@example.com / MyPassword
+  mealie:
+    container_name: dasyra_mealie
+    image: ghcr.io/mealie-recipes/mealie:latest
+    profiles: ["cookbook"]
+    ports:
+      - "9925:9000"
+    environment:
+      ALLOW_SIGNUP: "false"
+      BASE_URL: http://localhost:9925
+    volumes:
+      - mealie-data:/app/data
+
+volumes:
+  mealie-data:

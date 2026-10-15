@@ -20,7 +20,7 @@ func promptText(name string, vars ...string) string {
 
 // systemPrompt keeps the getting-to-know guidance with partial profiles too: saving a language preference
 // does not finish onboarding. The stable guidance precedes the profile; a check-in adds its own rules.
-func systemPrompt(u *dom.User, checkIn bool, collections []string) string {
+func systemPrompt(u *dom.User, checkIn bool, collections []string, cookbook bool) string {
 	name := u.DisplayName()
 	prompt := promptText("dasyra", "{name}", name) + promptText("onboarding", "{name}", name)
 	if u.HasProfile() {
@@ -28,6 +28,9 @@ func systemPrompt(u *dom.User, checkIn bool, collections []string) string {
 	}
 	if len(collections) > 0 {
 		prompt += "\n\nCollections of " + name + ": " + strings.Join(collections, ", ")
+	}
+	if cookbook {
+		prompt += "\n\n" + promptText("cookbook", "{name}", name)
 	}
 	if !checkIn {
 		return prompt

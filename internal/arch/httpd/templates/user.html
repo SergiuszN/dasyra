@@ -1,9 +1,43 @@
 {{define "user"}}{{template "head" .Title}}
 {{template "header" .}}
+{{with .Notice}}<div class="flash">{{.}}</div>{{end}}
+{{with .Error}}<div class="flash error">{{.}}</div>{{end}}
 {{template "tiles" .}}
 {{template "chart" .Chart}}
 {{template "breakdowns" .}}
 {{with .User}}
     <p class="note">With us since {{.CreatedAt.Format "2 Jan 2006"}}, time zone {{.Timezone}}.</p>
+<section class="card">
+    <h2>Cookbook</h2>
+    <form method="post" action="/panel/users/{{.ID}}/cookbook">
+        <input type="hidden" name="csrf" value="{{$.CSRF}}">
+        {{with $.Cookbook}}
+        <div class="fields">
+            <label class="field">Mealie API address
+                <input name="url" value="{{.URL}}" required placeholder="http://mealie:9000">
+            </label>
+            <label class="field">Public address, for links
+                <input name="public_url" value="{{.PublicURL}}" placeholder="https://recipes.example.com">
+            </label>
+            <label class="field">API token
+                <input name="token" type="password" autocomplete="off" placeholder="{{if .Connected}}{{.Masked}}, leave empty to keep{{else}}eyJhbGci…{{end}}">
+            </label>
+        </div>
+        <div class="actions">
+            <button class="btn primary" type="submit">{{if .Connected}}Save{{else}}Connect{{end}}</button>
+            <button class="btn" type="submit" formaction="/panel/users/{{$.User.ID}}/cookbook/check">Check</button>
+            {{if .Connected}}
+                <button class="btn danger" type="submit" formaction="/panel/users/{{$.User.ID}}/cookbook/delete" formnovalidate
+                        onclick="return confirm('Disconnect the cookbook? The recipes stay in Mealie.')">Disconnect</button>
+            {{end}}
+        </div>
+        {{end}}
+    </form>
+    <p class="note">
+        {{if $.Cookbook.Connected}}Connected: Dasyra keeps this user's recipes, meal plan and shopping lists in Mealie.{{else}}Not connected: recipes stay notes in Dasyra.{{end}}
+        The token is the user's own (Mealie → profile → API Tokens), so Dasyra sees their household, as they do in the app.
+        The public address makes links to recipes; without it Dasyra sends no links. The token is stored in the database and never shown.
+    </p>
+</section>
 {{end}}
 {{template "foot"}}{{end}}

@@ -16,19 +16,32 @@ import (
 // Session is the state of one run: who it is for and what the model has seen with its content.
 type Session struct {
 	User     *dom.User
-	Memories dom.Seen // only memories shown in full can be rewritten
-	Events   dom.Seen // only events shown with their id can be changed
-	Notes    dom.Seen // only notes read in full can get new content
+	Memories dom.Seen        // only memories shown in full can be rewritten
+	Events   dom.Seen        // only events shown with their id can be changed
+	Notes    dom.Seen        // only notes read in full can get new content
+	Cookbook *dom.Cookbook   // nil when the user has none connected
+	Recipes  map[string]bool // slugs of the cookbook recipes read in full, only they can be rewritten
 }
 
 func NewSession(u *dom.User) *Session {
-	return &Session{User: u, Memories: dom.Seen{}, Events: dom.Seen{}, Notes: dom.Seen{}}
+	return &Session{User: u, Memories: dom.Seen{}, Events: dom.Seen{}, Notes: dom.Seen{}, Recipes: map[string]bool{}}
 }
 
 type Tool interface {
 	Spec() llm.Tool
 	// Run returns the result for the model; validation problems are results too, an error means the tool broke
 	Run(ctx context.Context, s *Session, a Args) (string, error)
+}
+
+// Conditional is a tool only some users have, such as the cookbook ones: the model sees it only when enabled.
+type Conditional interface {
+	Enabled(s *Session) bool
+}
+
+// Enabled tells whether the model may see and call the tool in this run.
+func Enabled(t Tool, s *Session) bool {
+	c, ok := t.(Conditional)
+	return !ok || c.Enabled(s)
 }
 
 // Registry runs tools by name.
@@ -41,10 +54,13 @@ func NewRegistry(log *slog.Logger, tools ...Tool) *Registry {
 	return &Registry{tools: tools, log: log}
 }
 
-func (r *Registry) Specs() []llm.Tool {
-	specs := make([]llm.Tool, len(r.tools))
-	for i, t := range r.tools {
-		specs[i] = t.Spec()
+// Specs are the tools enabled for the session, always in the same order: they are part of the cached prompt.
+func (r *Registry) Specs(s *Session) []llm.Tool {
+	var specs []llm.Tool
+	for _, t := range r.tools {
+		if Enabled(t, s) {
+			specs = append(specs, t.Spec())
+		}
 	}
 	return specs
 }
@@ -53,7 +69,7 @@ func (r *Registry) Specs() []llm.Tool {
 func (r *Registry) Execute(ctx context.Context, s *Session, name, arguments string) (string, Args) {
 	args := ParseArgs(arguments)
 	for _, t := range r.tools {
-		if t.Spec().Name != name {
+		if t.Spec().Name != name || !Enabled(t, s) {
 			continue
 		}
 		result, err := t.Run(ctx, s, args)

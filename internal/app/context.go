@@ -27,7 +27,7 @@ const (
 func (d *Dasyra) prompt(ctx context.Context, s *tool.Session, history dom.History, run Run) []llm.Message {
 	u := s.User
 	messages := []llm.Message{
-		llm.System(systemPrompt(u, run.checkIn(), d.collections(ctx, u))).Cached(),
+		llm.System(systemPrompt(u, run.checkIn(), d.collections(ctx, u), s.Cookbook != nil)).Cached(),
 		llm.User(d.calendarContext(ctx, s)).Cached(),
 	}
 	if text := conversationContext(u, history); text != "" {

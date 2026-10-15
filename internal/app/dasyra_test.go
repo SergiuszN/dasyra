@@ -181,6 +181,26 @@ func TestPromptShowsCollections(t *testing.T) {
 	}
 }
 
+func TestPromptMentionsTheCookbookOnlyWhenConnected(t *testing.T) {
+	w := newWorld(t, answers("ok", "ok"))
+	cookbooks := sqlite.Cookbooks{DB: w.db}
+	w.dasyra.Cookbooks = cookbooks
+	w.say(t, dom.RoleUser, "что приготовить?", time.Now())
+	w.dasyra.Speak(ctx, w.user, Run{})
+	if strings.Contains(w.ai.prompt(), "Cookbook:") {
+		t.Fatal("no cookbook connected")
+	}
+
+	if err := cookbooks.SaveCookbook(ctx, dom.Cookbook{UserID: w.user.ID, URL: "http://mealie:9000", Token: "t"}); err != nil {
+		t.Fatal(err)
+	}
+	w.say(t, dom.RoleUser, "а на ужин?", time.Now())
+	w.dasyra.Speak(ctx, w.user, Run{})
+	if system := w.ai.requests[1].Messages[0].Text; !strings.Contains(system, "Cookbook: Alex has a recipe app") {
+		t.Fatalf("system prompt %s", system)
+	}
+}
+
 func TestMemoriesFillUpFromThePreviousExchange(t *testing.T) {
 	w := newWorld(t, answers("ok"))
 	m := &dom.Memory{ID: w.ids.Next(), Name: "Печь", Category: "work", Content: "Печь для обжига на 1220", CreatedAt: time.Now(), UpdatedAt: time.Now()}

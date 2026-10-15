@@ -161,6 +161,13 @@ type AISettings interface {
 	DeletePrice(ctx context.Context, providerID int64, model string) error
 }
 
+// Cookbooks are the recipe servers connected per user in the admin panel.
+type Cookbooks interface {
+	Cookbook(ctx context.Context, userID int64) (*Cookbook, error) // nil when none is connected
+	SaveCookbook(ctx context.Context, c Cookbook) error
+	DeleteCookbook(ctx context.Context, userID int64) error
+}
+
 // CheckInPlans holds the check-in plan of the admin panel, global like AISettings.
 type CheckInPlans interface {
 	CheckInPlan(ctx context.Context) (CheckInPlan, error) // DefaultCheckInPlan when none is saved
