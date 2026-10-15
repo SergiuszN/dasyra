@@ -97,6 +97,7 @@ var purposes = map[string]string{
 	"text_reader":   "Reading pages and files",
 	"transcription": "Voice transcription",
 	"embedding":     "Embeddings for search by meaning",
+	"expert":        "Expert answers",
 }
 
 func purposeLabel(p string) string {

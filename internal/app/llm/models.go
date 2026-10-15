@@ -6,6 +6,7 @@ package llm
 const (
 	haiku = "anthropic/claude-haiku-5.5"
 	luna  = "openai/gpt-6-luna"
+	sol   = "openai/gpt-6.1-sol"
 )
 
 // Roles, the keys the admin panel settings are stored under.
@@ -19,6 +20,7 @@ const (
 	RoleTranscription = "transcription"
 	RoleEmbedding     = "embedding"
 	RoleCheckInGate   = "check_in_gate"
+	RoleExpert        = "expert"
 )
 
 // Model is a model with the reasoning effort a role runs it at.
@@ -50,7 +52,10 @@ var (
 	// CheckInGate asks before a check-in whether there is anything to say: a decision model answers with a probability,
 	// no text, $0.02 per million input tokens. Off until turned on in the panel; only OpenRouter serves decision models
 	CheckInGate = Model{Role: RoleCheckInGate, ID: "perplexity/pplx-decider-v1.1-27b"}
+	// Expert answers when the user asks Dasyra to ask the expert: a big model without her rules and style,
+	// with the web, its answer goes to the user instead of hers
+	Expert = Model{RoleExpert, sol, "medium"}
 )
 
 // Models are all the roles with their defaults, in the order the admin panel shows them.
-var Models = []Model{Dasyra, DasyraCheckIn, DasyraReminder, Reflection, WebSearch, TextReader, Transcription, Embedding, CheckInGate}
+var Models = []Model{Dasyra, DasyraCheckIn, DasyraReminder, Reflection, WebSearch, TextReader, Transcription, Embedding, CheckInGate, Expert}

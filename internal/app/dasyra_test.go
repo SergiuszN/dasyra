@@ -136,6 +136,25 @@ func TestToolCallsAreStoredAndHintedNextTime(t *testing.T) {
 	}
 }
 
+func TestExpertAnswersInsteadOfHer(t *testing.T) {
+	w := newWorld(t, answers("## План\n\nСначала `composer update`.", "Её собственный ответ").
+		thenCall("ask_expert", `{"question":"Почему падает composer install?","intro":"Спросила эксперта:"}`))
+	w.say(t, dom.RoleUser, "спроси эксперта, почему падает composer install", time.Now())
+	w.dasyra.Speak(ctx, w.user, Run{})
+
+	if fmt.Sprint(w.chat.sent) != "[Спросила эксперта: md:## План\n\nСначала `composer update`.]" {
+		t.Fatalf("sent %q", w.chat.sent)
+	}
+	if newest := w.history(t).Newest(); newest.Content != "Спросила эксперта:\n\n## План\n\nСначала `composer update`." {
+		t.Fatalf("stored %q", newest.Content)
+	}
+	expert := w.ai.requests[1]
+	if len(w.ai.requests) != 2 || expert.Model.Role != llm.RoleExpert || len(expert.Messages) != 2 ||
+		strings.Contains(expert.Messages[0].Text, "Dasyra") || expert.Messages[1].Text != "Почему падает composer install?" {
+		t.Fatalf("expert request %+v", expert)
+	}
+}
+
 func TestWebCallsGetANudgeAndThenALimit(t *testing.T) {
 	w := newWorld(t, answers())
 	log := &callLog{}

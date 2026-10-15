@@ -75,6 +75,10 @@ func (c *chat) Send(_ context.Context, _ int64, text string) error {
 	return nil
 }
 
+func (c *chat) SendMarkdown(ctx context.Context, chatID int64, text string) error {
+	return c.Send(ctx, chatID, "md:"+text)
+}
+
 func (c *chat) React(_ context.Context, _, _ int64, emoji string) error {
 	c.reactions = append(c.reactions, emoji)
 	return nil
@@ -124,7 +128,8 @@ func newWorld(t *testing.T, ai *script) *world {
 		AI: ai, Chat: w.chat, IDs: w.ids, Log: discard,
 		Tools: tool.NewRegistry(discard, tool.CreateMemory{Memories: memories, IDs: w.ids}, tool.ListMemories{Memories: memories, Recall: tool.Recall{Memories: memories}},
 			tool.SaveEvent{Events: w.events, IDs: w.ids}, tool.UpdateProfile{Users: users},
-			tool.WebSearch{Search: offline{}, Log: discard}, tool.RecentResults{ToolCalls: sqlite.ToolCalls{DB: db}}),
+			tool.WebSearch{Search: offline{}, Log: discard}, tool.RecentResults{ToolCalls: sqlite.ToolCalls{DB: db}},
+			tool.AskExpert{AI: ai, Tools: tool.NewRegistry(discard), Log: discard}),
 	}
 	return w
 }

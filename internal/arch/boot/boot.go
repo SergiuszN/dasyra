@@ -66,6 +66,14 @@ func build(work context.Context, cfg Config, db *sqlite.DB, log *slog.Logger, be
 	reader := tool.TextReader{AI: model, Log: log}
 	pdf := &web.PDF{Log: log}
 	fetch := tool.WebFetch{Pages: web.NewPages(pdf, false), Reader: reader, Log: log}
+	search := tool.WebSearch{Search: web.NewSearch(cfg.SearxngURL, log), Fetch: fetch, AI: model, Log: log}
+	fetchJSON := tool.FetchJSON{API: web.NewJSON(false)}
+	expertTools := []tool.Tool{search, fetch, fetchJSON}
+	if bench != nil {
+		for i, t := range expertTools {
+			expertTools[i] = bench.decorate(t)
+		}
+	}
 	chatTools := []tool.Tool{
 		tool.CreateMemory{Memories: memories, IDs: ids},
 		tool.UpdateMemory{Memories: memories},
@@ -85,12 +93,13 @@ func build(work context.Context, cfg Config, db *sqlite.DB, log *slog.Logger, be
 		tool.MealPlan{API: cookbook},
 		tool.ShoppingList{API: cookbook},
 		fetch,
-		tool.WebSearch{Search: web.NewSearch(cfg.SearxngURL, log), Fetch: fetch, AI: model, Log: log},
-		tool.FetchJSON{API: web.NewJSON(false)},
+		search,
+		fetchJSON,
 		tool.ReadDocument{Messages: messages, Files: messenger, PDF: pdf, Reader: reader},
 		tool.SearchOldMessages{Messages: messages, Meaning: meaning},
 		tool.UpdateProfile{Users: users},
 		tool.RecentResults{ToolCalls: toolCalls},
+		tool.AskExpert{AI: model, Tools: tool.NewRegistry(log, expertTools...), Log: log},
 	}
 	reflectionTools := []tool.Tool{
 		tool.CreateMemory{Memories: memories, IDs: ids},

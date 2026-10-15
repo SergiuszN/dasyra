@@ -13,6 +13,7 @@ const (
 	PurposeTextReader    = "text_reader"
 	PurposeTranscription = "transcription"
 	PurposeEmbedding     = "embedding"
+	PurposeExpert        = "expert"
 	PurposeOther         = "other"
 )
 

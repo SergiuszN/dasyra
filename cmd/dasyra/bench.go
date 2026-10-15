@@ -315,6 +315,9 @@ func (c *benchChat) Send(_ context.Context, _ int64, text string) error {
 	*c.sent = append(*c.sent, text)
 	return nil
 }
+func (c *benchChat) SendMarkdown(ctx context.Context, chatID int64, text string) error {
+	return c.Send(ctx, chatID, text)
+}
 func (c *benchChat) React(_ context.Context, _, _ int64, emoji string) error {
 	*c.reactions = append(*c.reactions, emoji)
 	return nil

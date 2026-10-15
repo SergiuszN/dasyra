@@ -21,6 +21,7 @@ type Session struct {
 	Notes    dom.Seen        // only notes read in full can get new content
 	Cookbook *dom.Cookbook   // nil when the user has none connected
 	Recipes  map[string]bool // slugs of the cookbook recipes read in full, only they can be rewritten
+	Expert   *ExpertAnswer   // set by ask_expert: it ends the run and goes to the user instead of her reply
 }
 
 func NewSession(u *dom.User) *Session {

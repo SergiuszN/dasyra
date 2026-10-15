@@ -11,6 +11,8 @@ import (
 // Messenger is the chat Dasyra talks in.
 type Messenger interface {
 	Send(ctx context.Context, chatID int64, text string) error
+	// SendMarkdown shows Markdown formatted (bold, code blocks, links), for text Dasyra did not write herself
+	SendMarkdown(ctx context.Context, chatID int64, text string) error
 	React(ctx context.Context, chatID, messageID int64, emoji string) error
 	Typing(ctx context.Context, chatID int64)
 	tool.Files

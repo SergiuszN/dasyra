@@ -120,7 +120,13 @@ func (d *Dasyra) speak(ctx context.Context, u *dom.User, run Run, followUp bool)
 		defer d.typing(ctx, u)()
 	}
 	calls := &callLog{}
-	answer := dom.Answer(llm.Loop{Client: d.AI, Model: run.model(), MaxIterations: maxIterations, ErrorText: errorText, Log: d.Log}.
+	expert := func() (string, bool) {
+		if session.Expert == nil {
+			return "", false
+		}
+		return session.Expert.Reply(), true
+	}
+	answer := dom.Answer(llm.Loop{Client: d.AI, Model: run.model(), MaxIterations: maxIterations, ErrorText: errorText, Log: d.Log, Done: expert}.
 		Run(ctx, messages, d.Tools.Specs(session), d.executor(session, calls)))
 
 	if !d.worthSending(u, run, answer) {
@@ -141,7 +147,11 @@ func (d *Dasyra) speak(ctx context.Context, u *dom.User, run Run, followUp bool)
 	if newest := history.Newest(); newest != nil {
 		seen = newest.ID
 	}
-	d.deliver(ctx, u, history, answer)
+	if session.Expert != nil {
+		d.deliverExpert(ctx, u, session.Expert)
+	} else {
+		d.deliver(ctx, u, history, answer)
+	}
 	return seen, true
 }
 
@@ -202,6 +212,17 @@ func (d *Dasyra) deliver(ctx context.Context, u *dom.User, history dom.History, 
 		if err := d.Chat.Send(ctx, u.ChatID, part); err != nil {
 			d.Log.Error("Failed to send a reply part", "user_id", u.ID, "error", err)
 		}
+	}
+}
+
+// deliverExpert sends her intro, then the expert's answer whole and formatted: splitting it on empty lines
+// would cut code blocks apart.
+func (d *Dasyra) deliverExpert(ctx context.Context, u *dom.User, a *tool.ExpertAnswer) {
+	if err := d.Chat.Send(ctx, u.ChatID, a.Intro); err != nil {
+		d.Log.Error("Failed to send the expert intro", "user_id", u.ID, "error", err)
+	}
+	if err := d.Chat.SendMarkdown(ctx, u.ChatID, a.Text); err != nil {
+		d.Log.Error("Failed to send the expert answer", "user_id", u.ID, "error", err)
 	}
 }
 

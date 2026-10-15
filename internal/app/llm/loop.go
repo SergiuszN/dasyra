@@ -15,6 +15,8 @@ type Loop struct {
 	MaxIterations int
 	ErrorText     string // the answer when the model fails
 	Log           *slog.Logger
+	// Done ends the run after a round of tool calls when a tool already made the answer, such as ask_expert
+	Done func() (string, bool)
 }
 
 const finalizeText = "You have reached the maximum number of tool calls. Please provide your final answer based on the information you have gathered. Do not call any more tools."
@@ -34,6 +36,11 @@ func (l Loop) Run(ctx context.Context, messages []Message, tools []Tool, exec Ex
 		}
 		for _, call := range reply.ToolCalls {
 			messages = append(messages, Message{Role: "tool", ToolCallID: call.ID, Text: exec(ctx, call.Name, call.Arguments)})
+		}
+		if l.Done != nil {
+			if answer, done := l.Done(); done {
+				return answer
+			}
 		}
 
 		// Three steps before the limit the model has to answer with what it has

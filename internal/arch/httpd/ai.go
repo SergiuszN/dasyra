@@ -69,6 +69,7 @@ var roleInfo = map[string][2]string{
 	llm.RoleTranscription: {"Voice transcription", "the /audio/transcriptions endpoint"},
 	llm.RoleEmbedding:     {"Embeddings", "search by meaning, the /embeddings endpoint"},
 	llm.RoleCheckInGate:   {"Check-in gate", "a decision model, asked before a check-in when the gate is on"},
+	llm.RoleExpert:        {"Expert", "ask_expert: answers instead of Dasyra when the user asks for the expert"},
 }
 
 // Notices after a redirect, by the saved query value.
