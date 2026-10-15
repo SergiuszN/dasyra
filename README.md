@@ -30,11 +30,15 @@ Self-hosted: one small Go binary and a SQLite file. Usually under a dollar a mon
   instead of a reply when there is nothing to add.
 - 📚 **Keeps your collections.** Recipes, gift ideas, films, places, packing lists: saved word for word and
   brought back when you need them.
+- 🍳 **Runs your kitchen, if you want.** Connect a self-hosted [Mealie](https://mealie.io) cookbook and she saves
+  recipes there (a link is enough), plans the week's dinners and keeps the shopping list your household shares in
+  its app.
 
 ## What she is not
 
 Dasyra is deliberately narrow. She has **no shell, no access to your files, no plugins and no browser automation**.
 She can't run commands on your server or reach your home network: web requests to internal addresses are refused.
+The only service of yours she talks to is a cookbook you connect yourself, with that user's own token.
 The worst she can do is send you a bad message. That is the point: you can tell her about your whole life without
 handing her your machine.
 
@@ -79,6 +83,11 @@ docker compose -f compose.example.yml up -d
 Point the bot's webhook at `https://<your host>/telegram/webhook` with your `TELEGRAM_WEBHOOK_SECRET`, say hi to
 your bot, and Dasyra starts getting to know you. Invite friends with
 `docker compose -f compose.example.yml exec dasyra dasyra invite`.
+
+Optional cookbook: `docker compose -f compose.example.yml --profile cookbook up -d` adds Mealie on port 9925.
+Create an API token in its profile, then connect it to a user in the admin panel (`/panel`, the user's page →
+Cookbook) with the API address `http://mealie:9000`. Each user gets their own connection; people in one Mealie
+household share recipes, the meal plan and shopping lists.
 
 ## Contributing
 

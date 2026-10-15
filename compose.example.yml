@@ -22,3 +22,17 @@ services:
     restart: unless-stopped
     volumes:
       - ./searxng:/etc/searxng:ro
+
+  # Optional cookbook (--profile cookbook): connect it to a user in the admin panel with the API address
+  # http://mealie:9000 and a token from the user's Mealie profile. Set BASE_URL to where you open it.
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v3.28.0
+    restart: unless-stopped
+    profiles: ["cookbook"]
+    environment:
+      ALLOW_SIGNUP: "false"
+      BASE_URL: http://localhost:9925
+    volumes:
+      - ./mealie:/app/data
+    ports:
+      - "9925:9000"
