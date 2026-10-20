@@ -198,7 +198,7 @@ func TestReflectionWritesAJournalAndMovesOn(t *testing.T) {
 func TestInboxRegistersByInviteAndStoresAttachments(t *testing.T) {
 	w := newWorld(t, answers("Привет! Я Дасира."))
 	users, invites := sqlite.Users{DB: w.db}, sqlite.Invites{DB: w.db}
-	must(t, invites.Create(ctx, "code1"))
+	must(t, invites.Create(ctx, "code1", ""))
 	in := &Inbox{Users: users, Invites: invites, Messages: w.messages, Dasyra: w.dasyra, Chat: w.chat, Voice: voice{}, IDs: w.ids, Log: discard, Work: NewBackground(ctx)}
 
 	must(t, in.Receive(ctx, Incoming{ChatID: 2000, Private: true, Text: "hi"}))
@@ -222,6 +222,15 @@ func TestInboxRegistersByInviteAndStoresAttachments(t *testing.T) {
 	}
 	if fmt.Sprint(got) != `[[file "menu.pdf", read_document id 7] что тут? [voice] напомни про молоко]` {
 		t.Fatalf("stored %q", got)
+	}
+
+	// Turned off in the admin panel: turned away like a stranger, nothing stored
+	must(t, users.SetDisabled(ctx, danil.ID, now()))
+	w.chat.sent = nil
+	must(t, in.Receive(ctx, Incoming{ChatID: 2000, MessageID: 9, Private: true, Text: "ты тут?"}))
+	in.Work.Wait()
+	if after, _ := w.messages.Last(ctx, danil.ID, 10); len(after) != len(h) || fmt.Sprint(w.chat.sent) != "[Dasyra is invite-only for now.]" {
+		t.Fatalf("history %d sent %q", len(after), w.chat.sent)
 	}
 }
 

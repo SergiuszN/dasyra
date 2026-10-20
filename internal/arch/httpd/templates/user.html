@@ -6,7 +6,7 @@
 {{template "chart" .Chart}}
 {{template "breakdowns" .}}
 {{with .User}}
-    <p class="note">With us since {{.CreatedAt.Format "2 Jan 2006"}}, time zone {{.Timezone}}.</p>
+    <p class="note">With us since {{.CreatedAt.Format "2 Jan 2006"}}, time zone {{.Timezone}}.{{if .Disabled}} Access off since {{.DisabledAt.Format "2 Jan 2006"}}.{{end}} <a href="/panel/users">Access and invites</a></p>
 <section class="card">
     <h2>Cookbook</h2>
     <form method="post" action="/panel/users/{{.ID}}/cookbook">

@@ -69,13 +69,45 @@ func TestUsersBindOwnerAndRoundTrip(t *testing.T) {
 
 func TestInvitesAreSingleUse(t *testing.T) {
 	invites := Invites{openTest(t)}
-	must(t, invites.Create(ctx, "abc"))
+	must(t, invites.Create(ctx, "abc", "Danil"))
 	if ok, _ := invites.Available(ctx, "abc"); !ok {
 		t.Fatal("new invite must be available")
 	}
 	must(t, invites.Use(ctx, "abc", 2))
 	if ok, _ := invites.Available(ctx, "abc"); ok {
 		t.Fatal("used invite must not be available")
+	}
+
+	must(t, invites.Create(ctx, "def", ""))
+	must(t, invites.Revoke(ctx, "abc")) // used ones stay
+	must(t, invites.Revoke(ctx, "def"))
+	all, err := invites.All(ctx)
+	if err != nil || len(all) != 1 || all[0].Code != "abc" || all[0].Note != "Danil" || all[0].UserID != 2 || !all[0].Used() || all[0].CreatedAt.IsZero() {
+		t.Fatalf("invites %+v %v", all, err)
+	}
+}
+
+func TestDisabledUserKeepsChatButLeavesTheJobs(t *testing.T) {
+	users := Users{openTest(t)}
+	must(t, users.BindOwnerChat(ctx, 555))
+	must(t, users.Insert(ctx, &dom.User{ID: 2, Name: "Danil", ChatID: 777, Timezone: "UTC", CreatedAt: time.Now()}))
+	at := time.Date(2026, 10, 20, 12, 0, 0, 0, warsaw)
+	must(t, users.SetDisabled(ctx, 2, at))
+
+	u, _ := users.ByChat(ctx, 777)
+	if u == nil || !u.Disabled() || !u.DisabledAt.Equal(at) {
+		t.Fatalf("disabled user %+v", u)
+	}
+	must(t, users.Update(ctx, u)) // a reply saving the user it loaded leaves the switch alone
+	if active, _ := users.AllWithChat(ctx); len(active) != 1 || active[0].ID != dom.OwnerID {
+		t.Fatalf("active %+v", active)
+	}
+	if all, _ := users.All(ctx); len(all) != 2 {
+		t.Fatalf("all %+v", all)
+	}
+	must(t, users.SetDisabled(ctx, 2, time.Time{}))
+	if active, _ := users.AllWithChat(ctx); len(active) != 2 {
+		t.Fatalf("back on: %+v", active)
 	}
 }
 

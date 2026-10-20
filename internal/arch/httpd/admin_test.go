@@ -34,7 +34,7 @@ func panel(t *testing.T, login, password string) (*httptest.Server, *http.Client
 	}
 	_ = sqlite.UsageLog{DB: db}.Record(context.Background(), dom.Usage{UserID: 1, Purpose: "chat", Model: "anthropic/claude-haiku-5.5", PromptTokens: 12000, CachedTokens: 9000, CompletionTokens: 300, Cost: 0.0123})
 
-	admin := &Admin{Report: sqlite.Report{DB: db}, Users: sqlite.Users{DB: db}, AI: sqlite.AISettings{DB: db}, Plans: sqlite.Settings{DB: db}, CheckAI: checkAI, SuggestPrices: suggestPrices,
+	admin := &Admin{Report: sqlite.Report{DB: db}, Users: sqlite.Users{DB: db}, Invites: sqlite.Invites{DB: db}, AI: sqlite.AISettings{DB: db}, Plans: sqlite.Settings{DB: db}, CheckAI: checkAI, SuggestPrices: suggestPrices,
 		Cookbooks: sqlite.Cookbooks{DB: db}, CheckCookbook: checkCookbook,
 		Login: login, Password: password,
 		Log: slog.New(slog.NewTextHandler(io.Discard, nil)), pause: time.Millisecond}

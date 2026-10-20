@@ -11,17 +11,20 @@ import (
 
 type Users struct{ DB *DB }
 
-const userColumns = "id, COALESCE(name, ''), COALESCE(telegram_chat_id, 0), COALESCE(profile, ''), timezone, created_at, last_reflected_at"
+const userColumns = "id, COALESCE(name, ''), COALESCE(telegram_chat_id, 0), COALESCE(profile, ''), timezone, created_at, last_reflected_at, disabled_at"
 
 func (r Users) scan(row interface{ Scan(...any) error }) (*dom.User, error) {
 	var u dom.User
-	var created, reflected wall
-	if err := row.Scan(&u.ID, &u.Name, &u.ChatID, &u.Profile, &u.Timezone, &created, &reflected); err != nil {
+	var created, reflected, disabled wall
+	if err := row.Scan(&u.ID, &u.Name, &u.ChatID, &u.Profile, &u.Timezone, &created, &reflected, &disabled); err != nil {
 		return nil, err
 	}
 	u.CreatedAt = created.in(r.DB.Server)
 	if reflected.valid {
 		u.LastReflectedAt = reflected.in(r.DB.Server)
+	}
+	if disabled.valid {
+		u.DisabledAt = disabled.in(r.DB.Server)
 	}
 	return &u, nil
 }
@@ -43,7 +46,15 @@ func (r Users) ByChat(ctx context.Context, chatID int64) (*dom.User, error) {
 }
 
 func (r Users) AllWithChat(ctx context.Context) ([]*dom.User, error) {
-	rows, err := r.DB.QueryContext(ctx, "SELECT "+userColumns+" FROM users WHERE telegram_chat_id IS NOT NULL ORDER BY id")
+	return r.many(ctx, "telegram_chat_id IS NOT NULL AND disabled_at IS NULL")
+}
+
+func (r Users) All(ctx context.Context) ([]*dom.User, error) {
+	return r.many(ctx, "1")
+}
+
+func (r Users) many(ctx context.Context, where string) ([]*dom.User, error) {
+	rows, err := r.DB.QueryContext(ctx, "SELECT "+userColumns+" FROM users WHERE "+where+" ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +92,16 @@ func (r Users) BindOwnerChat(ctx context.Context, chatID int64) error {
 	return err
 }
 
+// SetDisabled is apart from Update: a reply running at that moment saves the user it loaded before and must not undo it.
+func (r Users) SetDisabled(ctx context.Context, id int64, at time.Time) error {
+	var stamp any
+	if !at.IsZero() {
+		stamp = r.DB.stamp(at)
+	}
+	_, err := r.DB.ExecContext(ctx, "UPDATE users SET disabled_at = ? WHERE id = ?", stamp, id)
+	return err
+}
+
 func (r Users) reflected(u *dom.User) any {
 	if u.LastReflectedAt.IsZero() {
 		return nil
@@ -97,8 +118,37 @@ func chat(id int64) any {
 
 type Invites struct{ DB *DB }
 
-func (r Invites) Create(ctx context.Context, code string) error {
-	_, err := r.DB.ExecContext(ctx, "INSERT INTO invites (code, created_at) VALUES (?, ?)", code, r.DB.stamp(time.Now()))
+func (r Invites) Create(ctx context.Context, code, note string) error {
+	_, err := r.DB.ExecContext(ctx, "INSERT INTO invites (code, note, created_at) VALUES (?, ?, ?)", code, note, r.DB.stamp(time.Now()))
+	return err
+}
+
+func (r Invites) All(ctx context.Context) ([]dom.Invite, error) {
+	rows, err := r.DB.QueryContext(ctx, "SELECT code, note, COALESCE(user_id, 0), created_at, used_at FROM invites ORDER BY created_at DESC, code")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var invites []dom.Invite
+	for rows.Next() {
+		var i dom.Invite
+		var created, used wall
+		if err := rows.Scan(&i.Code, &i.Note, &i.UserID, &created, &used); err != nil {
+			return nil, err
+		}
+		if created.valid {
+			i.CreatedAt = created.in(r.DB.Server)
+		}
+		if used.valid {
+			i.UsedAt = used.in(r.DB.Server)
+		}
+		invites = append(invites, i)
+	}
+	return invites, rows.Err()
+}
+
+func (r Invites) Revoke(ctx context.Context, code string) error {
+	_, err := r.DB.ExecContext(ctx, "DELETE FROM invites WHERE code = ? AND used_at IS NULL", code)
 	return err
 }
 

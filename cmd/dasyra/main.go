@@ -3,8 +3,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -151,10 +149,8 @@ func waitFor(grace time.Duration, waits ...func()) error {
 }
 
 func invite(ctx context.Context, a *boot.App) error {
-	buf := make([]byte, 6)
-	_, _ = rand.Read(buf)
-	code := hex.EncodeToString(buf)
-	if err := a.Invites.Create(ctx, code); err != nil {
+	code := dom.NewInviteCode()
+	if err := a.Invites.Create(ctx, code, ""); err != nil {
 		return err
 	}
 	if name, err := a.Telegram.Username(ctx); err == nil && name != "" {

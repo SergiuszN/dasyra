@@ -29,10 +29,12 @@ type UsageReport interface {
 // Admin is the panel with AI costs and tokens, overall and per user, and the models each role runs on.
 // It stays closed while Login or Password is empty.
 type Admin struct {
-	Report UsageReport
-	Users  dom.Users
-	AI     dom.AISettings
-	Plans  dom.CheckInPlans
+	Report  UsageReport
+	Users   dom.Users
+	Invites dom.Invites
+	BotName func(ctx context.Context) (string, error) // the bot's @name, for invite links
+	AI      dom.AISettings
+	Plans   dom.CheckInPlans
 	// Cookbooks are the recipe servers connected per user, CheckCookbook says whose the token is
 	Cookbooks     dom.Cookbooks
 	CheckCookbook func(ctx context.Context, c dom.Cookbook) (string, error)
@@ -67,7 +69,11 @@ func (a *Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /login", a.login)
 	mux.HandleFunc("POST /logout", a.logout)
 	mux.HandleFunc("GET /panel", a.guard(a.dashboard))
+	mux.HandleFunc("GET /panel/users", a.guard(a.usersPage))
 	mux.HandleFunc("GET /panel/users/{id}", a.guard(a.user))
+	mux.HandleFunc("POST /panel/users/{id}/access", a.guard(a.setAccess))
+	mux.HandleFunc("POST /panel/invites", a.guard(a.createInvite))
+	mux.HandleFunc("POST /panel/invites/revoke", a.guard(a.revokeInvite))
 	mux.HandleFunc("POST /panel/users/{id}/cookbook", a.guard(a.saveCookbook))
 	mux.HandleFunc("POST /panel/users/{id}/cookbook/check", a.guard(a.checkCookbook))
 	mux.HandleFunc("POST /panel/users/{id}/cookbook/delete", a.guard(a.deleteCookbook))

@@ -178,7 +178,8 @@ func (a *App) Scheduler() *schedule.Scheduler {
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("POST /telegram/webhook", &telegram.Webhook{Secret: a.Config.WebhookSecret, Inbox: a.Inbox, Log: a.Log})
-	admin := &httpd.Admin{Report: sqlite.Report{DB: a.DB}, Users: a.Users, AI: sqlite.AISettings{DB: a.DB}, Plans: sqlite.Settings{DB: a.DB}, CheckAI: a.AI.Check,
+	admin := &httpd.Admin{Report: sqlite.Report{DB: a.DB}, Users: a.Users, Invites: a.Invites, BotName: a.Telegram.Username,
+		AI: sqlite.AISettings{DB: a.DB}, Plans: sqlite.Settings{DB: a.DB}, CheckAI: a.AI.Check,
 		Cookbooks: sqlite.Cookbooks{DB: a.DB}, CheckCookbook: a.Cookbook.Check, SuggestPrices: a.AI.SuggestPrices,
 		Login: a.Config.AdminLogin, Password: a.Config.AdminPassword, Log: a.Log}
 	admin.Register(mux)

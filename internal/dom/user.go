@@ -19,6 +19,11 @@ type User struct {
 	Timezone        string
 	CreatedAt       time.Time
 	LastReflectedAt time.Time // zero until the first nightly reflection
+	DisabledAt      time.Time // set when the admin turned the user off: no answers, no check-ins, data kept
+}
+
+func (u *User) Disabled() bool {
+	return !u.DisabledAt.IsZero()
 }
 
 func (u *User) HasProfile() bool {

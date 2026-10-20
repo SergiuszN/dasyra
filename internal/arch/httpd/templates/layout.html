@@ -106,6 +106,7 @@
             {{range .Periods}}<a href="{{$.Path}}?period={{.Key}}" class="{{if eq .Key $.Period}}on{{end}}">{{.Label}}</a>
             {{end}}
         </nav>
+        <a class="nav" href="/panel/users">Users</a>
         <a class="nav" href="/panel/ai">Models</a>
         <a class="nav" href="/panel/check-ins">Check-ins</a>
         <form method="post" action="/logout">

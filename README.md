@@ -81,8 +81,8 @@ docker compose -f compose.example.yml up -d
 ```
 
 Point the bot's webhook at `https://<your host>/telegram/webhook` with your `TELEGRAM_WEBHOOK_SECRET`, say hi to
-your bot, and Dasyra starts getting to know you. Invite friends with
-`docker compose -f compose.example.yml exec dasyra dasyra invite`.
+your bot, and Dasyra starts getting to know you. Invite friends from the admin panel (`/panel/users`: single-use links,
+and access turned off or back on per user) or with `docker compose -f compose.example.yml exec dasyra dasyra invite`.
 
 Optional cookbook: `docker compose -f compose.example.yml --profile cookbook up -d` adds Mealie on port 9925.
 Create an API token in its profile, then connect it to a user in the admin panel (`/panel`, the user's page →

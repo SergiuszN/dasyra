@@ -64,6 +64,9 @@ func (in *Inbox) Receive(ctx context.Context, m Incoming) error {
 	if u == nil {
 		return in.stranger(ctx, m)
 	}
+	if u.Disabled() {
+		return in.Chat.Send(ctx, m.ChatID, inviteOnly)
+	}
 	if m.empty() || strings.HasPrefix(strings.TrimSpace(m.Text), "/start") {
 		return nil
 	}

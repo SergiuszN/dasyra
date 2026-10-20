@@ -10,17 +10,23 @@ import (
 type Users interface {
 	Get(ctx context.Context, id int64) (*User, error)
 	ByChat(ctx context.Context, chatID int64) (*User, error) // nil when unknown
+	// AllWithChat are the users Dasyra works for: with a chat and not turned off
 	AllWithChat(ctx context.Context) ([]*User, error)
+	All(ctx context.Context) ([]*User, error) // everyone, for the admin panel
 	Insert(ctx context.Context, u *User) error
 	Update(ctx context.Context, u *User) error
 	// BindOwnerChat gives the owner account its Telegram chat on first contact, so existing data stays with the owner
 	BindOwnerChat(ctx context.Context, chatID int64) error
+	// SetDisabled turns a user off at the given time, a zero time turns them back on
+	SetDisabled(ctx context.Context, id int64, at time.Time) error
 }
 
 type Invites interface {
-	Create(ctx context.Context, code string) error
+	Create(ctx context.Context, code, note string) error
 	Available(ctx context.Context, code string) (bool, error)
 	Use(ctx context.Context, code string, userID int64) error
+	All(ctx context.Context) ([]Invite, error)     // newest first
+	Revoke(ctx context.Context, code string) error // unused ones only
 }
 
 type Messages interface {

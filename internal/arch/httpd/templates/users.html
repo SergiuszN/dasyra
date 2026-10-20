@@ -1,0 +1,97 @@
+{{define "users"}}{{template "head" .Title}}
+<header class="top">
+    <div>
+        <div class="crumbs"><a href="/panel">← Spend</a></div>
+        <h1>{{.Title}}</h1>
+    </div>
+    <form method="post" action="/logout">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <button class="link" type="submit">Log out</button>
+    </form>
+</header>
+
+{{with .Notice}}<div class="flash">{{.}}</div>{{end}}
+{{with .Error}}<div class="flash error">{{.}}</div>{{end}}
+
+<section class="card">
+    <h2>People</h2>
+    <div class="scroll">
+        <table>
+            <tr><th>Name</th><th>With us since</th><th>Access</th><th></th></tr>
+            {{range .Users}}
+                <tr>
+                    <td><a href="/panel/users/{{.ID}}">{{if .Name}}{{.Name}}{{else}}User #{{.ID}}{{end}}</a></td>
+                    <td>{{.CreatedAt.Format "2 Jan 2006"}}</td>
+                    <td>{{if .Disabled}}<span class="muted">off since {{.DisabledAt.Format "2 Jan 2006"}}</span>{{else if eq .ChatID 0}}<span class="muted">no chat yet</span>{{else}}on{{end}}</td>
+                    <td>
+                        {{if ne .ID 1}}
+                        <form method="post" action="/panel/users/{{.ID}}/access">
+                            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+                            {{if .Disabled}}
+                                <button class="btn" type="submit" name="access" value="on">Turn on</button>
+                            {{else}}
+                                <button class="btn danger" type="submit" name="access" value="off"
+                                        onclick="return confirm('Turn {{.Name}} off? Dasyra stops answering and writing to them, their data stays.')">Turn off</button>
+                            {{end}}
+                        </form>
+                        {{else}}<span class="muted">owner</span>{{end}}
+                    </td>
+                </tr>
+            {{end}}
+        </table>
+    </div>
+    <p class="note">
+        A user turned off gets "Dasyra is invite-only" to every message, gets no check-ins, reminders or nightly reflection,
+        and costs nothing. Memories, history and notes stay, turning them back on picks up where they left off.
+    </p>
+</section>
+
+<section class="card">
+    <h2>Invites</h2>
+    <form method="post" action="/panel/invites">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <div class="fields">
+            <label class="field">For whom, optional
+                <input name="note" placeholder="Anna, from work">
+            </label>
+            <div><button class="btn primary" type="submit">Create invite link</button></div>
+        </div>
+    </form>
+    {{if .Open}}
+    <div class="scroll" style="margin-top:14px">
+        <table>
+            <tr><th>Link</th><th>For</th><th>Created</th><th></th></tr>
+            {{range .Open}}
+                <tr>
+                    <td><input readonly value="{{.Link}}" onclick="this.select()"></td>
+                    <td>{{.Note}}</td>
+                    <td>{{.CreatedAt.Format "2 Jan 2006 15:04"}}</td>
+                    <td>
+                        <form method="post" action="/panel/invites/revoke">
+                            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+                            <input type="hidden" name="code" value="{{.Code}}">
+                            <button class="btn danger" type="submit">Revoke</button>
+                        </form>
+                    </td>
+                </tr>
+            {{end}}
+        </table>
+    </div>
+    {{end}}
+    {{if .Used}}
+    <div class="scroll" style="margin-top:14px">
+        <table>
+            <tr><th>Used by</th><th>For</th><th>Used</th></tr>
+            {{range .Used}}
+                <tr>
+                    <td>{{if .User}}<a href="/panel/users/{{.UserID}}">{{.User}}</a>{{else}}<span class="muted">#{{.UserID}}</span>{{end}}</td>
+                    <td>{{.Note}}</td>
+                    <td>{{.UsedAt.Format "2 Jan 2006 15:04"}}</td>
+                </tr>
+            {{end}}
+        </table>
+    </div>
+    {{end}}
+    <p class="note">Each link works once: the person opens it and taps Start in Telegram. A revoked link no longer lets anyone in.</p>
+</section>
+{{template "foot"}}{{end}}
