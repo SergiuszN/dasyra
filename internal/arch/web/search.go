@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -20,19 +21,25 @@ const searchInterval = 4 * time.Second
 
 var errSearchDown = errors.New("web search is unavailable: every engine failed")
 
-// Search asks the private SearXNG first and ddgr when it fails. An error means the search itself is down,
-// so the model doesn't read it as "nothing exists".
+const braveURL = "https://api.search.brave.com/res/v1/web/search"
+
+// Search asks the private SearXNG first, then Brave (with a key) and ddgr when it fails. An error means the
+// search itself is down, so the model doesn't read it as "nothing exists".
 type Search struct {
 	URL      string // SearXNG, empty to skip it
+	BraveKey string // Brave Search API, empty to skip it
+	BraveURL string
 	Throttle *Throttle
 	Fallback func(ctx context.Context, query string) ([]tool.SearchResult, error)
 	Log      *slog.Logger
 	client   *http.Client
 }
 
-func NewSearch(searxngURL string, log *slog.Logger) *Search {
+func NewSearch(searxngURL, braveKey string, log *slog.Logger) *Search {
 	return &Search{
 		URL:      strings.TrimRight(searxngURL, "/"),
+		BraveKey: braveKey,
+		BraveURL: braveURL,
 		Throttle: &Throttle{Interval: searchInterval},
 		Fallback: ddgr,
 		Log:      log,
@@ -47,6 +54,14 @@ func (s *Search) Search(ctx context.Context, query string) ([]tool.SearchResult,
 		return results, nil
 	} else if err != nil {
 		s.Log.Error("SearXNG search failed", "query", query, "error", err)
+	}
+
+	if s.BraveKey != "" {
+		if results, err := s.brave(ctx, query); err == nil && len(results) > 0 {
+			return results, nil
+		} else if err != nil {
+			s.Log.Error("Brave search failed", "query", query, "error", err)
+		}
 	}
 
 	s.Throttle.Wait(ctx)
@@ -86,6 +101,40 @@ func (s *Search) searxng(ctx context.Context, query string) ([]tool.SearchResult
 	}
 	return normalize(body.Results, "content"), nil
 }
+
+func (s *Search) brave(ctx context.Context, query string) ([]tool.SearchResult, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.BraveURL+"?"+url.Values{"q": {query}}.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("X-Subscription-Token", s.BraveKey)
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+	var body struct {
+		Web struct {
+			Results []map[string]any `json:"results"`
+		} `json:"web"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return nil, err
+	}
+	results := normalize(body.Web.Results, "description")
+	// Brave marks the query words in snippets with <strong>
+	for i := range results {
+		results[i].Title = html.UnescapeString(tags.ReplaceAllString(results[i].Title, ""))
+		results[i].Snippet = html.UnescapeString(tags.ReplaceAllString(results[i].Snippet, ""))
+	}
+	return results, nil
+}
+
+var tags = regexp.MustCompile(`<[^>]+>`)
 
 var jsonArrayTail = regexp.MustCompile(`(?s)(\[.*\])\s*$`)
 

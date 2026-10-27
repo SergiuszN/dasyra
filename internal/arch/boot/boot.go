@@ -66,7 +66,7 @@ func build(work context.Context, cfg Config, db *sqlite.DB, log *slog.Logger, be
 	reader := tool.TextReader{AI: model, Log: log}
 	pdf := &web.PDF{Log: log}
 	fetch := tool.WebFetch{Pages: web.NewPages(pdf, false), Reader: reader, Log: log}
-	search := tool.WebSearch{Search: web.NewSearch(cfg.SearxngURL, log), Fetch: fetch, AI: model, Log: log}
+	search := tool.WebSearch{Search: web.NewSearch(cfg.SearxngURL, cfg.BraveKey, log), Fetch: fetch, AI: model, Log: log}
 	fetchJSON := tool.FetchJSON{API: web.NewJSON(false)}
 	expertTools := []tool.Tool{search, fetch, fetchJSON}
 	if bench != nil {

@@ -160,7 +160,7 @@ func TestSearchFallsBackWhenSearxngIsEmptyOrDown(t *testing.T) {
 		}
 		w.Write([]byte(`{"results":[]}`))
 	})
-	s := NewSearch(empty, quiet)
+	s := NewSearch(empty, "", quiet)
 	s.Throttle.Interval = 0
 	s.Fallback = func(context.Context, string) ([]tool.SearchResult, error) {
 		return []tool.SearchResult{{Title: "ddg", URL: "https://ddg.gg"}}, nil
@@ -176,11 +176,40 @@ func TestSearchFallsBackWhenSearxngIsEmptyOrDown(t *testing.T) {
 	}
 }
 
+func TestSearchTriesBraveBeforeDdgr(t *testing.T) {
+	down := serve(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusBadGateway) })
+	brave := serve(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Subscription-Token") != "key" || r.URL.Query().Get("q") != "market" {
+			t.Errorf("request %v %v", r.Header, r.URL)
+		}
+		w.Write([]byte(`{"web":{"results":[{"title":"Farmers &amp; market","url":"https://city.example/m","description":"Opens on <strong>Saturday</strong>"}]}}`))
+	})
+	s := NewSearch(down, "key", quiet)
+	s.BraveURL = brave
+	s.Throttle.Interval = 0
+	s.Fallback = func(context.Context, string) ([]tool.SearchResult, error) {
+		t.Fatal("no ddgr expected")
+		return nil, nil
+	}
+	got, err := s.Search(ctx, "market")
+	if err != nil || len(got) != 1 || got[0].Title != "Farmers & market" || got[0].Snippet != "Opens on Saturday" {
+		t.Fatalf("got %+v %v", got, err)
+	}
+
+	s.BraveURL = down
+	s.Fallback = func(context.Context, string) ([]tool.SearchResult, error) {
+		return []tool.SearchResult{{Title: "ddg", URL: "https://ddg.gg"}}, nil
+	}
+	if got, err := s.Search(ctx, "market"); err != nil || len(got) != 1 || got[0].Title != "ddg" {
+		t.Fatalf("ddgr after Brave: %+v %v", got, err)
+	}
+}
+
 func TestSearchUsesSearxngResults(t *testing.T) {
 	url := serve(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"results":[{"title":"Farmers market","url":"https://city.example/market","content":"Opens  on Saturday"}]}`))
 	})
-	s := NewSearch(url, quiet)
+	s := NewSearch(url, "", quiet)
 	s.Fallback = func(context.Context, string) ([]tool.SearchResult, error) {
 		t.Fatal("no fallback expected")
 		return nil, nil
