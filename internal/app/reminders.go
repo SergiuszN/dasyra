@@ -17,7 +17,7 @@ const (
 	forgottenUntil = 30 * time.Minute
 )
 
-const dueTrigger = `EVENT DUE NOW: %[1]s. If this is work you agreed to perform for %[2]s, do it now without a new message. Start from its "skill" memory; reuse working sources/APIs and find another route for failed pages. Compare with the last successful check. Save the checked period, latest result, source/API + full jq filter and useful failure notes in the skill. If nothing changed, send one short sentence, not old details or promises of instant alerts. Otherwise remind %[2]s about it briefly. Stay on this event. Do not reply NO_MESSAGE.`
+const dueTrigger = `EVENT DUE NOW: %[1]s. If this is work you agreed to perform for %[2]s, do it now without a new message. Start from its "skill" memory; reuse working sources/APIs and find another route for failed pages. Compare with its last check. The skill is a short recipe, not a log: under 2000 characters, rewritten whole: working sources/APIs with full jq filters, dead ends in a few words, and one line "Last check: <date>, <newest item seen>" that replaces the previous one. Never add the queries you ran, dated entries or findings beyond that line. If nothing changed, send one short sentence, not old details or promises of instant alerts. Otherwise remind %[2]s about it briefly. Stay on this event. Do not reply NO_MESSAGE.`
 
 // Reminders wakes Dasyra for due events and occurrences of recurring ones (digests, regular tasks),
 // and answers messages whose reply was killed midway.
